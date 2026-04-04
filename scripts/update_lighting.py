@@ -39,7 +39,7 @@ def update_lighting_pipeline():
 
     # STEP 3: MongoDB Setup
     client = MongoClient(MONGODB_URI)
-    db = client.get_database(DB_NAME)
+    db = client.get_default_database()
     collection = db.road_segments
 
     # STEP 4: Process Documents in Batches
@@ -89,7 +89,7 @@ def update_lighting_pipeline():
                     activity_at_time = activity_array[t] if t < len(activity_array) else 0
                     
                     # 70% Weight on Street Lamps, 30% Weight on Business Presence
-                    night_score = (0.7 * lamp_score) + (0.3 * activity_at_time)
+                    night_score = (0.7 * lamp_score) + (0.6 * activity_at_time)
                     lighting[t] = min(1.0, round(night_score, 4))
 
             # STEP 8 & 9: Prepare Bulk Update
