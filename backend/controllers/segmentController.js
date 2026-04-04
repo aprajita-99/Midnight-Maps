@@ -4,7 +4,7 @@ const segmentService = require('../services/segmentService');
 const scoringService = require('../services/scoringService');
 const generateSegmentId = require('../utils/generateSegmentId');
 
-// Create or update a segment
+
 exports.createSegment = async (req, res, next) => {
   try {
     const segment = await segmentService.createOrUpdateSegment(req.body);
@@ -14,7 +14,20 @@ exports.createSegment = async (req, res, next) => {
   }
 };
 
-// Bulk insert/update segments
+const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; 
+};
+
 exports.bulkInsertSegments = async (req, res, next) => {
   try {
     if (!Array.isArray(req.body)) return res.status(400).json({ success: false, message: 'Body must be an array' });
@@ -26,7 +39,6 @@ exports.bulkInsertSegments = async (req, res, next) => {
   }
 };
 
-// Sync all safety scores manually
 exports.syncScores = async (req, res, next) => {
   try {
     const result = await scoringService.recomputeAllScores();
@@ -36,7 +48,6 @@ exports.syncScores = async (req, res, next) => {
   }
 };
 
-// Get all scored segments
 exports.getScoredSegments = async (req, res, next) => {
   try {
     const { limit } = req.query;
@@ -47,10 +58,7 @@ exports.getScoredSegments = async (req, res, next) => {
   }
 };
 
-// --- NEW Routing Logic ---
 
-// Helper for finding nearest scored segment for a point
-// Helper: Finds the nearest road segment, then fetches its pre-computed scores
 const findSegmentData = async (lat, lng, radius = 500) => {
   // 1. Find the physical road segment (for features)
   const roadSegment = await RoadSegment.findOne({
@@ -72,10 +80,7 @@ const findSegmentData = async (lat, lng, radius = 500) => {
     scores: scoredSegment ? scoredSegment.scores : null
   };
 };
-/**
- * Aligns Google Routes with safety data and computes safety metrics
- * POST /api/segments/analyze-routes
- */
+
 exports.analyzeRoutes = async (req, res) => {
   try {
     const { routes } = req.body;
@@ -86,13 +91,11 @@ exports.analyzeRoutes = async (req, res) => {
     const timeSlot = Math.floor(new Date().getHours() / 2);
     const analysisResults = [];
 
-    // FIX 1: Process routes in parallel to prevent massive bottlenecks and timeouts
-    await Promise.all(routes.map(async (route, routeIndex) => {
+     await Promise.all(routes.map(async (route, routeIndex) => {
       const points = route.points;
       const segmentScores = [];
 
-      // Sample a maximum of 100 points per route to keep memory stable
-      const sampleRate = points.length > 100 ? Math.ceil(points.length / 100) : 1;
+     const sampleRate = points.length > 100 ? Math.ceil(points.length / 100) : 1;
       
       const fetchPromises = [];
       for (let i = 0; i < points.length - 1; i += sampleRate) {
@@ -102,87 +105,80 @@ exports.analyzeRoutes = async (req, res) => {
         const midLat = (p1.lat + p2.lat) / 2;
         const midLng = (p1.lng + p2.lng) / 2;
         
-        // Use the new combined helper
-        fetchPromises.push(findSegmentData(midLat, midLng, 500));
+       fetchPromises.push(findSegmentData(midLat, midLng, 500));
       }
 
       const matchedSegments = await Promise.all(fetchPromises);
 
-      // Variables to track individual feature averages
+      let totalRouteDistanceMeters = 0;
+      let dangerousDistanceMeters = 0;
+      let weightedSafetySum = 0;
+      let minScore = 1.0;
+
       let totalLighting = 0, totalActivity = 0, totalCamera = 0, totalEnvironment = 0;
       let validFeatureCount = 0;
 
-      matchedSegments.forEach(data => {
-        // --- 1. HANDLE OVERALL SAFETY SCORE ---
+     matchedSegments.forEach((data, index) => {
+       const p1 = points[index * sampleRate];
+        const p2 = points[(index * sampleRate) + sampleRate] || points[points.length - 1];
+        const stepDistance = getDistanceMeters(p1.lat, p1.lng, p2.lat, p2.lng) || 1; // Fallback to 1m to prevent 0 division
+
+        totalRouteDistanceMeters += stepDistance;
+
+        let currentSegmentSafety = 0.5; // Fallback
         if (data && data.scores && data.scores.length > timeSlot) {
-          segmentScores.push(data.scores[timeSlot]);
-        } else {
-          segmentScores.push(0.5); // Fallback neutral
+          currentSegmentSafety = data.scores[timeSlot];
         }
 
-        // --- 2. HANDLE INDIVIDUAL UI FEATURES ---
+        weightedSafetySum += (currentSegmentSafety * stepDistance);
+
+        if (currentSegmentSafety < minScore) minScore = currentSegmentSafety;
+        if (currentSegmentSafety < 0.45) dangerousDistanceMeters += stepDistance;
         if (data && data.features) {
           const f = data.features;
           
-          // Time-aware arrays (fallback to 0.5 if missing)
           const lightingVal = Array.isArray(f.lighting) ? (f.lighting[timeSlot] ?? 0.5) : (f.lighting ?? 0.5);
           const activityVal = Array.isArray(f.activity) ? (f.activity[timeSlot] ?? 0.5) : (f.activity ?? 0.5);
-          
-          // Normalize camera count to 0.0 - 1.0 (assuming 5 cameras = 100% coverage)
           const cameraVal = Math.min((f.camera ?? 0) / 5, 1.0);
-          
-          // Environment is static
           const envVal = f.environment ?? 0.5;
 
-          totalLighting += lightingVal;
-          totalActivity += activityVal;
-          totalCamera += cameraVal;
-          totalEnvironment += envVal;
+          totalLighting += (lightingVal * stepDistance);
+          totalActivity += (activityVal * stepDistance);
+          totalCamera += (cameraVal * stepDistance);
+          totalEnvironment += (envVal * stepDistance);
           
-          validFeatureCount++;
-        }else {
-          totalLighting += 0.5;
-          totalActivity += 0.5;
-          totalCamera += 0.5;
-          totalEnvironment += 0.5;
           validFeatureCount++;
         }
       });
+let rawMeanSafety = weightedSafetySum / (totalRouteDistanceMeters || 1);
 
-      // Prevent division by zero
-      const featureDivisor = validFeatureCount || 1;
+      let chokePointPenalty = 0;
+      if (dangerousDistanceMeters > 150) {
+        chokePointPenalty = Math.min((dangerousDistanceMeters / 1000), 0.30); 
+      }
 
-      // --- MATHEMATICAL SCORING ---
-      const meanSafety = segmentScores.reduce((a, b) => a + b, 0) / (segmentScores.length || 1);
-      const minScore = segmentScores.length > 0 ? Math.min(...segmentScores) : 0.5;
-      const dangerousPoints = segmentScores.filter(s => s < 0.45).length;
-      const risk = dangerousPoints / (segmentScores.length || 1);
+      const finalMeanSafety = Math.min(0.98, Math.max(0.05, (0.35 + (rawMeanSafety * 0.65)) - chokePointPenalty));
 
+      const risk = dangerousDistanceMeters / (totalRouteDistanceMeters || 1);
       analysisResults.push({
         routeIndex,
-        meanSafety,
+        meanSafety: finalMeanSafety,
         risk, 
         minScore,
         distance: route.distance,
         duration: route.duration,
-        // Send the real, averaged features to the frontend
-        features: {
-          lighting: totalLighting / featureDivisor,
-          activity: totalActivity / featureDivisor,
-          camera: totalCamera / featureDivisor,
-          environment: totalEnvironment / featureDivisor
+       features: {
+          lighting: totalLighting / (totalRouteDistanceMeters || 1),
+          activity: totalActivity / (totalRouteDistanceMeters || 1),
+          camera: totalCamera / (totalRouteDistanceMeters || 1),
+          environment: totalEnvironment / (totalRouteDistanceMeters || 1)
         }
       });
     }));
 
-    // Ensure array is sorted back to original index order (Promise.all resolves randomly)
     analysisResults.sort((a, b) => a.routeIndex - b.routeIndex);
 
-    // ---------------------------------------------
-    // FIX 4: The Route Selection Algorithms
-    // ---------------------------------------------
-    
-    let shortestRouteIndex = 0;
+     let shortestRouteIndex = 0;
     let minDuration = Infinity;
     
     analysisResults.forEach((res, idx) => {
@@ -192,12 +188,10 @@ exports.analyzeRoutes = async (req, res) => {
       }
     });
 
-    // 2. SAFEST ROUTE (Strictly maximum safety score)
     let safestIndex = 0;
     let maxSafetyMetric = -1;
     
     analysisResults.forEach((res, idx) => {
-      // Weigh the average safety (70%) and minimum safety (30%)
       const safetyMetric = (res.meanSafety * 0.7) + (res.minScore * 0.3);
       if (safetyMetric > maxSafetyMetric) {
         maxSafetyMetric = safetyMetric;
@@ -205,18 +199,12 @@ exports.analyzeRoutes = async (req, res) => {
       }
     });
 
-    // 3. BALANCED ROUTE (Safety minus Detour Penalty)
     let balancedIndex = 0;
     let maxBalancedScore = -Infinity;
     
     analysisResults.forEach((res, idx) => {
-      // How much longer is this route compared to the absolute fastest?
-      // e.g., 600s vs 500s -> (600-500)/500 = 0.20 (It takes 20% more time)
       const timePenalty = (res.duration - minDuration) / (minDuration || 1);
       
-      // We start with the Mean Safety, but penalize it if it takes too long.
-      // A 20% detour drops the safety score by 0.15 points (0.20 * 0.75).
-      // If the safety gain is less than 0.15, the algorithm will stick to the faster route!
       const balancedScore = res.meanSafety - (timePenalty * 0.75);
       
       if (balancedScore > maxBalancedScore) {
@@ -326,8 +314,6 @@ exports.getNearestSegment = async (req, res, next) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-
-// Get nearby segments with recursive radius fallback using MongoDB geospatial search
 exports.getNearbySegments = async (req, res, next) => {
   try {
     const { lat, lng } = req.query;
@@ -356,8 +342,7 @@ exports.getNearbySegments = async (req, res, next) => {
       return res.json({ status: 'no_data' });
     }
 
-    // Return only required fields as requested
-    res.json(segments.map(seg => ({
+   res.json(segments.map(seg => ({
       segment_id: seg.segment_id,
       midpoint: seg.midpoint,
       features: seg.features
