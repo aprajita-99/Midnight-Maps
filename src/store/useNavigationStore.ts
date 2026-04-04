@@ -34,6 +34,11 @@ interface NavigationState {
   safestRouteIndex: number | null;
   balancedRouteIndex: number | null;
 
+  // Map Overlay Toggles
+  showCameras: boolean;
+  showLamps: boolean;
+  showPolice: boolean;
+
   isLoading: boolean;
   error: string | null;
   
@@ -44,6 +49,12 @@ interface NavigationState {
   setDirectionsResult: (result: google.maps.DirectionsResult | null) => void;
   setSelectedRouteIndex: (index: number) => void;
   setRouteAnalysis: (analysis: any) => void;
+  
+  // Overlay Setters
+  setShowCameras: (show: boolean) => void;
+  setShowLamps: (show: boolean) => void;
+  setShowPolice: (show: boolean) => void;
+
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
@@ -60,6 +71,11 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   shortestRouteIndex: 0, 
   safestRouteIndex: null,
   balancedRouteIndex: null,
+
+  // Initialize overlays as hidden
+  showCameras: false,
+  showLamps: false,
+  showPolice: false,
 
   isLoading: false,
   error: null,
@@ -87,6 +103,12 @@ export const useNavigationStore = create<NavigationState>((set) => ({
     safestRouteIndex: analysis.indices.safest,
     balancedRouteIndex: analysis.indices.balanced
   }),
+
+  // Overlay Actions
+  setShowCameras: (show) => set({ showCameras: show }),
+  setShowLamps: (show) => set({ showLamps: show }),
+  setShowPolice: (show) => set({ showPolice: show }),
+
   setIsLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error, directionsResult: null, isLoading: false }),
 }));

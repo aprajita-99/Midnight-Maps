@@ -12,6 +12,9 @@ import type { UserLocation } from '../../hooks/useUserLocation.ts';
 import type { NavState } from '../../hooks/useNavigation.ts';
 import SafetyInspector from './SafetyInspector';
 
+import cameraData from '../../../datasets/koramangala_cameras.json';
+import lampData from '../../../datasets/koramangala_street_lamps.json';
+
 interface MapViewProps {
   userLocation?: UserLocation | null;
   isLocationEnabled?: boolean;
@@ -27,6 +30,10 @@ const center = {
 
 export default function MapView({ userLocation, isLocationEnabled, mapRef: externalMapRef, navState }: MapViewProps) {
   const store = useNavigationStore();
+  
+  // Grab the toggle states from our Zustand store
+  const { showCameras, showLamps, showPolice } = store;
+
   const [, setMap] = useState<google.maps.Map | null>(null);
   const internalMapRef = useRef<google.maps.Map | null>(null);
   const storeRef = useRef(store);
@@ -149,52 +156,15 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
   const { mapType, startLocation, endLocation } = store;
   const isNav = !!navState?.isNavigating;
 
-  // ── Safety Segments ──────────────────────────────────────────────────────
-  const [nearbySegments, setNearbySegments] = useState<any[]>([]);
-  const fetchTimeoutRef = useRef<any>(null);
-
-  const fetchNearbySegments = useCallback(async (lat: number, lng: number) => {
-    if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
-
-    fetchTimeoutRef.current = setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/segments/nearby?lat=${lat}&lng=${lng}`);
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setNearbySegments(data);
-        } else if (data.status === 'no_data') {
-          setNearbySegments([]);
-        }
-      } catch (err) {
-        console.error('Failed to fetch segments:', err);
-      }
-    }, 300); // 300ms debounce
-  }, []);
-
-  const handleMapIdle = useCallback(() => {
-    const map = internalMapRef.current;
-    if (!map || isNav) return;
-    const center = map.getCenter();
-    if (!center) return;
-    fetchNearbySegments(center.lat(), center.lng());
-  }, [fetchNearbySegments, isNav]);
-
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (!e.latLng || isNav) return;
     setCoordsTooltip(null); // Dismiss tooltip on single click
-    fetchNearbySegments(e.latLng.lat(), e.latLng.lng());
-  }, [fetchNearbySegments, isNav]);
+  }, [isNav]);
 
   const handleMapDblClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (!e.latLng) return;
     setCoordsTooltip({ lat: e.latLng.lat(), lng: e.latLng.lng() });
   }, []);
-
-  const getColor = (env: number) => {
-    if (env > 0.7) return "#4ADE80"; // green-400
-    if (env > 0.4) return "#FACC15"; // yellow-400
-    return "#F87171"; // red-400
-  };
 
   return (
     <div className="absolute inset-0 w-full h-full">
@@ -205,7 +175,6 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
         onLoad={onLoad}
         onUnmount={onUnmount}
         mapTypeId={mapType}
-        onIdle={handleMapIdle}
         onClick={handleMapClick}
         onDblClick={handleMapDblClick}
         /* Detect user panning map — breaks camera follow */
@@ -254,6 +223,55 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
         ) : (
           <RoutePolylines />
         )}
+
+        {/* --- DATABASES & OVERLAYS --- */}
+        
+        {/* 1. Street Lamps Layer (Yellow Dots) */}
+        {showLamps && lampData.map((lamp: any, i: number) => (
+          <Marker
+            key={`lamp-${i}`}
+            position={{ lat: lamp.lat, lng: lamp.lng }}
+            icon={{
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 4,
+              fillColor: '#EAB308', 
+              fillOpacity: 0.8,
+              strokeWeight: 0,
+            }}
+            zIndex={20}
+          />
+        ))}
+
+        {/* 2. CCTV Cameras Layer (Blue Camera Icons) */}
+        {showCameras && cameraData.map((cam: any, i: number) => (
+          <Marker
+            key={`cam-${i}`}
+            position={{ lat: cam.lat, lng: cam.lng }}
+            icon={{
+              url: 'data:image/svg+xml;utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%233B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>',
+              scaledSize: new window.google.maps.Size(20, 20),
+            }}
+            zIndex={21}
+          />
+        ))}
+
+        {/* 3. Police Stations Layer (Red Shield Icons for Hackathon Demo) */}
+        {showPolice && [
+          { lat: 12.9348, lng: 77.6140, name: "Koramangala Police Station" },
+          { lat: 12.9228, lng: 77.6250, name: "Madiwala Police Station" },
+          { lat: 12.9150, lng: 77.6400, name: "HSR Layout Police Station" }
+        ].map((police, i) => (
+          <Marker
+            key={`police-${i}`}
+            position={{ lat: police.lat, lng: police.lng }}
+            title={police.name}
+            icon={{
+              url: 'data:image/svg+xml;utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="%23EF4444" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+              scaledSize: new window.google.maps.Size(26, 26),
+            }}
+            zIndex={22}
+          />
+        ))}
 
         {/* Coords Tooltip */}
         <AnimatePresence>
@@ -375,7 +393,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
           }}
         />
 
-        {/* 2. Add the Safety Inspector so it only mounts when NOT navigating */}
+        {/* Add the Safety Inspector so it only mounts when NOT navigating */}
         {!isNav && <SafetyInspector />}
 
         {/* Navigation arrow at user's GPS position */}

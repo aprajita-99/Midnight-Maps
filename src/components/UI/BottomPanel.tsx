@@ -1,8 +1,10 @@
+import React from 'react';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import RouteCard from './RouteCard';
 import { Navigation, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { UseNavigationReturn } from '../../hooks/useNavigation';
+import RouteDetailsPanel from './RouteDetailsPanel';
 
 interface BottomPanelProps {
   nav: UseNavigationReturn;
@@ -55,13 +57,16 @@ export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
             className="flex flex-col gap-4"
           >
             {directionsResult.routes.slice(0, 5).map((route, index) => (
-              <RouteCard 
-                key={`route-card-${index}`}
-                route={route} 
-                index={index}
-                isSelected={selectedRouteIndex === index} 
-                onClick={() => setSelectedRouteIndex(index)} 
-              />
+              <React.Fragment key={`route-wrapper-${index}`}>
+                <RouteCard 
+                  route={route} 
+                  index={index}
+                  isSelected={selectedRouteIndex === index} 
+                  onClick={() => setSelectedRouteIndex(index)} 
+                />
+                {/* ONLY show the detailed panel for the actively selected route */}
+                {selectedRouteIndex === index && <RouteDetailsPanel />}
+              </React.Fragment>
             ))}
           </motion.div>
         )}
