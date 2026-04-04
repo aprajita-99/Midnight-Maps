@@ -47,6 +47,7 @@ interface NavigationState {
 
   isLoading: boolean;
   error: string | null;
+  feedbackStatus: string | null;
   
   setStartLocation: (loc: LocationInfo | null) => void;
   setEndLocation: (loc: LocationInfo | null) => void;
@@ -55,6 +56,7 @@ interface NavigationState {
   setDirectionsResult: (result: google.maps.DirectionsResult | null) => void;
   setSelectedRouteIndex: (index: number) => void;
   setRouteAnalysis: (analysis: any) => void;
+  submitFeedback: (type: 'segment' | 'route', targetId: any, rating: number) => Promise<void>;
   
   // Overlay Setters
   setShowCameras: (show: boolean) => void;
@@ -72,6 +74,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   travelMode: "DRIVING",
   directionsResult: null,
   selectedRouteIndex: 0,
+  feedbackStatus: null,
   
   routeAnalysis: null,
   shortestRouteIndex: 0, 
@@ -109,6 +112,35 @@ export const useNavigationStore = create<NavigationState>((set) => ({
     safestRouteIndex: analysis.indices.safest,
     balancedRouteIndex: analysis.indices.balanced
   }),
+  submitFeedback: async (type, targetId, rating) => {
+    try {
+      // Grab the user's exact local time slot
+      const localTimeSlot = Math.floor(new Date().getHours() / 2);
+      
+      const response = await fetch('/api/segments/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: type,
+          data: targetId,
+          rating: rating,
+          timeSlot: localTimeSlot,
+          userId: 'hackathon_demo_user' // Anonymous identifier
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        // Show a success message in the UI
+        set({ feedbackStatus: "Model Updated" });
+        
+        // Clear the success message after 3 seconds so they can rate again later if needed
+        setTimeout(() => set({ feedbackStatus: null }), 3000);
+      }
+    } catch (err) {
+      console.error("Failed to submit feedback", err);
+    }
+  },
 
   // Overlay Actions
   setShowCameras: (show) => set({ showCameras: show }),
