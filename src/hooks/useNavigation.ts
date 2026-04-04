@@ -113,10 +113,11 @@ function fetchNavDirections(
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
-const REROUTE_DIST_M   = 80;   // trigger reroute if > 80 m off nearest step
+const REROUTE_DIST_M   = 100;   // trigger reroute if > 80 m off nearest step
 const REROUTE_DEBOUNCE = 15_000; // minimum ms between auto-reroutes
 const STEP_ADVANCE_M   = 25;   // advance step when within 25 m of its endpoint
-const GPS_THROTTLE_MS  = 1_000;
+const GPS_THROTTLE_MS  = 30;
+
 
 const INITIAL: NavState = {
   isNavigating:       false,
@@ -135,6 +136,7 @@ const INITIAL: NavState = {
 // ─── hook ─────────────────────────────────────────────────────────────────────
 
 export function useNavigation(): UseNavigationReturn {
+
   const [state, setState]       = useState<NavState>(INITIAL);
   const watchIdRef              = useRef<number | null>(null);
   const lastGpsRef              = useRef(0);
@@ -313,6 +315,8 @@ export function useNavigation(): UseNavigationReturn {
   );
 
   useEffect(() => () => stopNavigation(), [stopNavigation]);
+
+  
 
   return { ...state, startNavigation, stopNavigation };
 }

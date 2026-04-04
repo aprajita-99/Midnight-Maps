@@ -61,6 +61,11 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
   // Reset follow mode whenever navigation starts / stops
   useEffect(() => {
     if (navState?.isNavigating) {
+      const map = internalMapRef.current;
+if (map) {
+  map.setZoom(18);
+  map.setTilt(60);
+}
       setIsFollowing(true);
     } else {
       // Exit nav: restore flat map
@@ -73,30 +78,44 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
   }, [navState?.isNavigating]);
 
   // ── Camera follow + rotation on every GPS update ─────────────────────────
-  useEffect(() => {
-    if (!navState?.isNavigating) return;
-    if (navState.currentLat === null || navState.currentLng === null) return;
+ useEffect(() => {
+  if (!navState?.isNavigating) return;
+  if (navState.currentLat === null || navState.currentLng === null) return;
 
-    const map = internalMapRef.current;
-    if (!map) return;
+  const map = internalMapRef.current;
+  if (!map) return;
 
-    const lat = navState.currentLat;
-    const lng = navState.currentLng;
-    const heading = navState.heading ?? 0;
+  const lat = navState.currentLat;
+  const lng = navState.currentLng;
+  const heading = navState.heading ?? 0;
 
-    // Smooth heading: only update when heading changes meaningfully (avoid GPS jitter)
-    const headingDelta = Math.abs(heading - lastHeadingRef.current);
-    if (heading !== 0 && headingDelta > 5) {
-      lastHeadingRef.current = heading;
-      map.setHeading(heading);
-      map.setTilt(45);
-    }
+  // ── Smooth heading ─────────────────────────────
+  const smoothHeading =
+    lastHeadingRef.current * 0.7 + heading * 0.3;
 
-    if (isFollowingRef.current) {
-      map.panTo({ lat, lng });
-    }
-  }, [navState?.currentLat, navState?.currentLng, navState?.heading, navState?.isNavigating]);
+  lastHeadingRef.current = smoothHeading;
 
+  map.setHeading(smoothHeading);
+  map.setTilt(60);
+
+  // ── Forward camera offset (CRITICAL) ───────────
+  const offsetDistance = 0.0004; // ~40–50 meters ahead
+
+  const rad = (smoothHeading * Math.PI) / 180;
+
+  const forwardLat = lat + offsetDistance * Math.cos(rad);
+  const forwardLng = lng + offsetDistance * Math.sin(rad);
+
+  if (isFollowingRef.current) {
+    map.panTo({ lat: forwardLat, lng: forwardLng });
+    map.setZoom(18);
+  }
+}, [
+  navState?.currentLat,
+  navState?.currentLng,
+  navState?.heading,
+  navState?.isNavigating
+]);
   // ── Recenter handler ──────────────────────────────────────────────────────
   const handleRecenter = useCallback(() => {
     const map = internalMapRef.current;
@@ -107,14 +126,19 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
     if (lat == null || lng == null) return;
 
     setIsFollowing(true);
-    map.panTo({ lat, lng });
-    map.setZoom(17);
-
     const heading = navState?.heading ?? 0;
-    if (heading !== 0) {
-      map.setHeading(heading);
-      map.setTilt(45);
-    }
+const offsetDistance = 0.0004;
+
+const rad = (heading * Math.PI) / 180;
+
+const forwardLat = lat + offsetDistance * Math.cos(rad);
+const forwardLng = lng + offsetDistance * Math.sin(rad);
+
+map.panTo({ lat: forwardLat, lng: forwardLng });
+map.setZoom(18);
+map.setTilt(60);
+map.setHeading(heading);
+
   }, [navState?.currentLat, navState?.currentLng, navState?.heading]);
 
   // ── Map lifecycle ─────────────────────────────────────────────────────────
@@ -409,7 +433,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
               fillOpacity: 1,
               strokeColor: '#ffffff',
               strokeWeight: 2,
-              rotation: navState.heading ?? 0,
+              rotation: lastHeadingRef.current,
               anchor: new window.google.maps.Point(0, 2.5),
             }}
           />

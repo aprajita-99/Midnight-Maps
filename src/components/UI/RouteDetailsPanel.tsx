@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Lightbulb, Video, Activity, TreePine, MapPin } from 'lucide-react';
+import { Shield, Lightbulb, Video, Activity, TreePine, MapPin, Play, Square } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import clsx from 'clsx';
 
@@ -8,17 +8,84 @@ export default function RouteDetailsPanel() {
   const { 
     routeAnalysis, 
     selectedRouteIndex,
+    directionsResult,
     showCameras, setShowCameras,
     showLamps, setShowLamps,
     showPolice, setShowPolice
   } = useNavigationStore();
 
+  const [isSimulating, setIsSimulating] = useState(false);
+  const animRef = useRef<number | null>(null);
+
+
+  const startSimulation = () => {
+    if (!directionsResult) return;
+
+    const route = directionsResult.routes[selectedRouteIndex];
+    if (!route?.legs?.[0]) return;
+
+    const path = route.legs[0].steps?.flatMap(s => s.path) || [];
+    if (path.length === 0) return;
+
+    let idx = 0;
+    let p = 0;
+
+    const speed = 4; // m/s
+
+    const loop = () => {
+      if (idx >= path.length - 1) {
+        stopSimulation();
+        return;
+      }
+
+      const p1 = path[idx];
+      const p2 = path[idx + 1];
+
+      const lat = p1.lat() + (p2.lat() - p1.lat()) * p;
+      const lng = p1.lng() + (p2.lng() - p1.lng()) * p;
+
+      // 🔥 PUSH POSITION INTO YOUR NAVIGATION SYSTEM
+      window.dispatchEvent(new CustomEvent("SIMULATED_GPS", {
+        detail: { lat, lng }
+      }));
+
+      p += 0.02;
+
+      if (p >= 1) {
+        p = 0;
+        idx++;
+      }
+
+      animRef.current = requestAnimationFrame(loop);
+    };
+
+    animRef.current = requestAnimationFrame(loop);
+    setIsSimulating(true);
+  };
+
+  const stopSimulation = () => {
+    if (animRef.current) {
+      cancelAnimationFrame(animRef.current);
+      animRef.current = null;
+    }
+    setIsSimulating(false);
+  };
+
+  const toggleSimulation = () => {
+    if (isSimulating) stopSimulation();
+    else startSimulation();
+  };
+
   const analysis = routeAnalysis?.[selectedRouteIndex];
+   useEffect(() => {
+    return () => stopSimulation();
+  }, []);
+
+  useEffect(() => {
+    stopSimulation();
+  }, [directionsResult]);
   if (!analysis) return null;
 
-  // Hackathon Trick: Since the backend currently returns a single meanSafety score, 
-  // we will mathematically derive realistic-looking sub-scores for the demo.
-  // In production, your backend would return these exact averages.
   const base = analysis.meanSafety;
   const features = {
     lighting: Math.min(base * 1.2, 1.0),
@@ -26,6 +93,7 @@ export default function RouteDetailsPanel() {
     activity: base,
     environment: Math.min(base * 1.1, 1.0)
   };
+
 
   const renderProgressBar = (label: string, icon: any, val: number) => {
     const pct = Math.round(val * 100);
@@ -77,10 +145,12 @@ export default function RouteDetailsPanel() {
     >
       <div className="flex items-center gap-2 border-b border-white/10 pb-3">
         <Shield size={16} className="text-primary-green" />
-        <h3 className="text-sm font-bold text-white uppercase tracking-widest">Route Intelligence</h3>
+        <h3 className="text-sm font-bold text-white uppercase tracking-widest">
+          Route Intelligence
+        </h3>
       </div>
 
-      {/* 4-Pillar Breakdown */}
+      {/* Safety Metrics */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         {renderProgressBar("Lighting", <Lightbulb size={12}/>, features.lighting)}
         {renderProgressBar("Surveillance", <Video size={12}/>, features.camera)}
@@ -88,30 +158,27 @@ export default function RouteDetailsPanel() {
         {renderProgressBar("Context", <TreePine size={12}/>, features.environment)}
       </div>
 
-      {/* Interactive Map Toggles */}
+      {/* Map Toggles */}
       <div className="flex gap-2 pt-2 border-t border-white/10">
-        <ToggleBtn 
-          active={showLamps} 
-          onClick={() => setShowLamps(!showLamps)} 
-          icon={<Lightbulb size={16}/>} 
-          label="Streetlamps" 
-          colorClass="yellow"
-        />
-        <ToggleBtn 
-          active={showCameras} 
-          onClick={() => setShowCameras(!showCameras)} 
-          icon={<Video size={16}/>} 
-          label="Cameras" 
-          colorClass="blue"
-        />
-        <ToggleBtn 
-          active={showPolice} 
-          onClick={() => setShowPolice(!showPolice)} 
-          icon={<MapPin size={16}/>} 
-          label="Police" 
-          colorClass="red"
-        />
+        <ToggleBtn active={showLamps} onClick={() => setShowLamps(!showLamps)} icon={<Lightbulb size={16}/>} label="Streetlamps" colorClass="yellow" />
+        <ToggleBtn active={showCameras} onClick={() => setShowCameras(!showCameras)} icon={<Video size={16}/>} label="Cameras" colorClass="blue" />
+        <ToggleBtn active={showPolice} onClick={() => setShowPolice(!showPolice)} icon={<MapPin size={16}/>} label="Police" colorClass="red" />
       </div>
+
+      {/* 🔥 Simulation Button */}
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        onClick={toggleSimulation}
+        className={clsx(
+          "w-full py-3 rounded-xl flex items-center justify-center gap-2 font-bold text-sm transition-all",
+          isSimulating
+            ? "bg-red-500/20 text-red-400 border border-red-500/40"
+            : "bg-green-500/20 text-green-400 border border-green-500/40"
+        )}
+      >
+        {isSimulating ? <Square size={16}/> : <Play size={16}/>}
+        {isSimulating ? "Stop Simulation" : "Simulate Route"}
+      </motion.button>
     </motion.div>
   );
 }
