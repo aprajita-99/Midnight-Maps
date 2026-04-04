@@ -11,6 +11,78 @@ DB_NAME = "night_navigator"
 def compute_safety_scores(features):
     """
     Python implementation of the 12-slot safety scoring logic 
+    with dynamic day/night weighting.
+    """
+    scores = []
+    
+    # Extract features
+    lighting_arr = features.get("lighting", [0.5] * 12)
+    activity_arr = features.get("activity", [0.5] * 12)
+    env_val = features.get("environment", 0.5)
+    cam_val = features.get("camera", 0.5)
+    
+    # Handle environment/camera if they are accidentally arrays or single values
+    def get_val(val, idx):
+        if isinstance(val, list):
+            return val[idx] if idx < len(val) else 0.5
+        return val
+
+    for t in range(12):
+        # 1. Extract time-slot values
+        L = lighting_arr[t] if isinstance(lighting_arr, list) and t < len(lighting_arr) else 0.5
+        A = activity_arr[t] if isinstance(activity_arr, list) and t < len(activity_arr) else 0.5
+        E = get_val(env_val, t)
+        C = get_val(cam_val, t)
+        
+        # 2. Determine Time of Day (Assuming 2-hr slots starting at 12 AM)
+        # Night: 6 PM - 6 AM (Slots 9, 10, 11, 0, 1, 2)
+        # Day: 6 AM - 6 PM (Slots 3, 4, 5, 6, 7, 8)
+        is_night = (t >= 9 or t <= 2)
+
+        if is_night:
+            # NIGHT WEIGHTS: Lighting heavily prioritized over Environment
+            WEIGHTS = {
+                'LIGHTING': 0.50,
+                'ACTIVITY': 0.30,
+                'ENVIRONMENT': 0.10,
+                'CAMERA': 0.10
+            }
+        else:
+            # DAY WEIGHTS: Environment (Context) and Activity prioritized
+            WEIGHTS = {
+                'LIGHTING': 0.10,
+                'ACTIVITY': 0.40,
+                'ENVIRONMENT': 0.40,
+                'CAMERA': 0.10
+            }
+        
+        # 3. Calculate Base Weighted Score
+        base_score = (L * WEIGHTS['LIGHTING']) + \
+                     (A * WEIGHTS['ACTIVITY']) + \
+                     (E * WEIGHTS['ENVIRONMENT']) + \
+                     (C * WEIGHTS['CAMERA'])
+        
+        # 4. Penalties (Applied mostly at night or when it's genuinely dark/deserted)
+        # "Dark and Deserted" (30% penalty)
+        if L < 0.3 and A < 0.3:
+            base_score *= 0.70
+        # "Dark" (15% penalty)
+        elif L < 0.3:
+            base_score *= 0.85
+            
+        # 5. Time-of-Day Contextual Shift (Slot 0 & 1 = 12 AM - 4 AM)
+        if (t == 0 or t == 1) and base_score > 0.90:
+            base_score = 0.90
+            
+        # 6. Clamp between 0.02 and 0.98
+        final_score = max(0.02, min(0.98, base_score))
+        
+        scores.append(round(final_score, 4))
+        
+    return scores
+    
+    """
+    Python implementation of the 12-slot safety scoring logic 
     from computeSafetyScore.js.
     """
     scores = []
