@@ -137,7 +137,7 @@ function App() {
             />
           )}
         </AnimatePresence>
-        <TripSummaryModal />
+        <TripSummaryModal nav={nav} />
       </div>
     </div>
   );

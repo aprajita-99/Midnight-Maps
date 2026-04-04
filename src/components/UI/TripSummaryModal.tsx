@@ -3,15 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Star, MapPin, ShieldCheck, X } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import clsx from 'clsx';
+import type { UseNavigationReturn } from '../../hooks/useNavigation';
 
-export default function TripSummaryModal() {
+interface TripSummaryModalProps {
+  nav: UseNavigationReturn;
+}
+
+export default function TripSummaryModal({ nav }: TripSummaryModalProps) {
   const { 
     showTripSummary, 
     setShowTripSummary, 
     submitFeedback, 
     directionsResult, 
     selectedRouteIndex,
-    setDirectionsResult // <-- ADDED: Needed to clear the map from this component
+    setDirectionsResult 
   } = useNavigationStore();
   
   const [hoveredStar, setHoveredStar] = useState(0);
@@ -46,6 +51,7 @@ export default function TripSummaryModal() {
       setShowTripSummary(false); // Hide Modal
       setIsSubmitted(false);     // Reset stars
       setDirectionsResult(null); // <-- Clear the map now!
+      nav.stopNavigation();
     }, 2500);
   };
 
@@ -53,6 +59,7 @@ export default function TripSummaryModal() {
   const handleClose = () => {
     setShowTripSummary(false);
     setDirectionsResult(null); // Make sure the map clears if they X out!
+    nav.stopNavigation();
   };
 
   return (

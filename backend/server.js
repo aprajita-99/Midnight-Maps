@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 5000;
 
 // For a Hackathon demo, "*/2 * * * *" runs it every 2 minutes. 
 // (In a real startup, you'd change this to "0 * * * *" to run once an hour).
-cron.schedule('*/2 * * * *', async () => {
+cron.schedule('*0 * * * *', async () => {
   try {
     await batchLearningService.runBatchTraining();
   } catch (error) {

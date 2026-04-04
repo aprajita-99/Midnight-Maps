@@ -25,7 +25,6 @@ router.get('/nearest', getNearestSegment);
 router.get('/nearby', getNearbySegments);
 
 router.get('/test', async (req, res) => {
-  console.log("TEST ROUTE HIT");
   const data = await RoadSegment.find().limit(2);
   res.json(data);
 });

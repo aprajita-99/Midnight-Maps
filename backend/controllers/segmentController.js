@@ -86,8 +86,6 @@ exports.analyzeRoutes = async (req, res) => {
     const { routes } = req.body;
     if (!Array.isArray(routes)) return res.status(400).json({ success: false, message: 'Routes array required' });
 
-    console.log(`[DEBUG] Analyzing ${routes.length} routes...`);
-
     const timeSlot = Math.floor(new Date().getHours() / 2);
     const analysisResults = [];
 
@@ -212,8 +210,6 @@ let rawMeanSafety = weightedSafetySum / (totalRouteDistanceMeters || 1);
         balancedIndex = idx;
       }
     });
-
-    console.log(`[DEBUG] Computed Indices -> Shortest: ${shortestRouteIndex}, Safest: ${safestIndex}, Balanced: ${balancedIndex}`);
 
     res.status(200).json({
       success: true,

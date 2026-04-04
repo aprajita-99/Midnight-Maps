@@ -20,7 +20,6 @@ app.use('/api/segments', segmentRoutes);
 // Simple Health Check
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
 app.use((req, res, next) => {
-  console.log("REQUEST HIT:", req.method, req.url);
   next();
 });
 // Global error handler
