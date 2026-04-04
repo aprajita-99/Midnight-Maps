@@ -35,7 +35,10 @@ const ScoredSegmentSchema = new mongoose.Schema({
     type: [Number],
     validate: [val => val.length === 12, 'Scores must have exactly 12 time slots (0-11)'],
     required: true,
-  }
+  },
+  rl_modifier: { type: Number, default: 0 }, 
+  rating_count: { type: Number, default: 0 }, 
+  last_rated_at: { type: Date }
 }, {
   timestamps: true,
   collection: 'scored_segments'
