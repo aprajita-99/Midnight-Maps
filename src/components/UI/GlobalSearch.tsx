@@ -2,6 +2,7 @@ import { Search, Menu, Navigation } from 'lucide-react';
 import LocationSearchInput from './LocationSearchInput';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { motion } from 'framer-motion';
+import { CornerUpRight } from 'lucide-react';
 
 interface GlobalSearchProps {
   onMenuClick: () => void;
@@ -52,13 +53,13 @@ export default function GlobalSearch({ onMenuClick, mapRef }: GlobalSearchProps)
 
       {/* Quick navigation toggle — small circle to match Google Maps UI */}
       <motion.button
+        onClick={onMenuClick}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={onMenuClick}
-        className="w-14 h-14 rounded-2xl bg-primary-green flex items-center justify-center text-dark-900 shadow-2xl border border-primary-green/20"
-        title="Planning Mode"
+        title="Get Directions" // CHANGED from "Planning Mode"
+        className="w-14 h-14 bg-primary-green rounded-full shadow-[0_0_20px_rgba(34,197,94,0.3)] flex items-center justify-center text-dark-900 hover:bg-primary-green/90 transition-colors pointer-events-auto"
       >
-        <Navigation size={22} fill="currentColor" />
+        <CornerUpRight size={26} strokeWidth={2.5} />
       </motion.button>
 
       <style>{`

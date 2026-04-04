@@ -1,4 +1,4 @@
-import { MapPin, Navigation, ArrowDownUp, Search } from 'lucide-react';
+import { MapPin, Navigation, ArrowDownUp, Search , X } from 'lucide-react';
 import LocationSearchInput from './LocationSearchInput';
 import TravelModeTabs from './TravelModeTabs';
 import { useNavigationStore } from '../../store/useNavigationStore';
@@ -7,7 +7,7 @@ import { useUserLocation } from '../../hooks/useUserLocation';
 import { motion } from 'framer-motion';
 
 export default function SearchBar() {
-  const { startLocation, endLocation, setStartLocation, setEndLocation } = useNavigationStore();
+  const { startLocation, endLocation, setStartLocation, setEndLocation, setDirectionsResult } = useNavigationStore();
   const { fetchDirections } = useDirections();
   const { enableLocation } = useUserLocation();
 
@@ -24,6 +24,12 @@ export default function SearchBar() {
       },
       (err) => console.error('Location denied:', err)
     );
+  };
+
+  const handleClear = () => {
+    setStartLocation(null);
+    setEndLocation(null);
+    setDirectionsResult(null); // This automatically wipes the polylines and analysis!
   };
 
   const handleRouteSearch = () => {
@@ -77,15 +83,30 @@ export default function SearchBar() {
         />
       </div>
 
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={handleRouteSearch}
-        className="mt-1 w-full py-3 bg-primary-green/10 text-primary-green font-bold rounded-xl border border-primary-green/20 hover:bg-primary-green hover:text-dark-900 transition flex justify-center items-center gap-2"
-      >
-        <Search size={18} />
-        Find Safe Routes
-      </motion.button>
+      <div className="flex gap-2 mt-1">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleRouteSearch}
+          className="flex-1 py-3 bg-primary-green/10 text-primary-green font-bold rounded-xl border border-primary-green/20 hover:bg-primary-green hover:text-dark-900 transition flex justify-center items-center gap-2"
+        >
+          <Search size={18} />
+          Find Routes
+        </motion.button>
+
+        {/* Only show clear button if there is data to clear */}
+        {(startLocation || endLocation) && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleClear}
+            className="px-4 py-3 bg-primary-red/10 text-primary-red font-bold rounded-xl border border-primary-red/20 hover:bg-primary-red hover:text-white transition flex justify-center items-center"
+            title="Clear Route"
+          >
+            <X size={20} />
+          </motion.button>
+        )}
+      </div>
     </div>
   );
 }

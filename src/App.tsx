@@ -52,12 +52,12 @@ function App() {
     }
   }, [isLocationEnabled, userLocation, isNavigating]);
 
-  // Automatically close sidebar when navigation starts
+  // Automatically close sidebar when navigation starts OR Street View opens
   useEffect(() => {
-    if (isNavigating) {
+    if (isNavigating || svStatus === 'open') {
       setIsSidebarOpen(false);
     }
-  }, [isNavigating]);
+  }, [isNavigating, svStatus]);
 
   if (loadError) return <div className="w-screen h-screen flex items-center justify-center bg-dark-900 text-white font-sans">Error loading maps</div>;
   if (!isLoaded) return <div className="w-screen h-screen flex flex-col gap-4 items-center justify-center bg-dark-900 text-white font-sans"><div className="w-8 h-8 rounded-full border-t-2 border-primary-green animate-spin" />Loading Map...</div>;

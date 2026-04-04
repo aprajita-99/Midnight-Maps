@@ -159,7 +159,7 @@ export default function SafetyInspector() {
                   key="error"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="bg-dark-900/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl"
+                  className="bg-dark-900/90 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl whitespace-nowrap min-w-[140px] flex items-center justify-center"
                 >
                   <span className="text-xs text-red-400 font-bold uppercase tracking-widest">No Data Found</span>
                 </motion.div>
