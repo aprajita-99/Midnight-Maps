@@ -16,6 +16,7 @@ import { useStreetView } from './hooks/useStreetView';
 import { useNavigation } from './hooks/useNavigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import TripSummaryModal from './components/UI/TripSummaryModal';
 
 const DUMMY_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 type Library = "places" | "drawing" | "geometry" | "visualization";
@@ -136,6 +137,7 @@ function App() {
             />
           )}
         </AnimatePresence>
+        <TripSummaryModal />
       </div>
     </div>
   );

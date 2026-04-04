@@ -57,7 +57,8 @@ interface NavigationState {
   setSelectedRouteIndex: (index: number) => void;
   setRouteAnalysis: (analysis: any) => void;
   submitFeedback: (type: 'segment' | 'route', targetId: any, rating: number) => Promise<void>;
-  
+  showTripSummary: boolean;
+  setShowTripSummary: (show: boolean) => void;
   // Overlay Setters
   setShowCameras: (show: boolean) => void;
   setShowLamps: (show: boolean) => void;
@@ -88,6 +89,9 @@ export const useNavigationStore = create<NavigationState>((set) => ({
 
   isLoading: false,
   error: null,
+  // ... existing state ...
+  showTripSummary: false,
+  setShowTripSummary: (show) => set({ showTripSummary: show }),
   
   setStartLocation: (loc) => set({ startLocation: loc }),
   setEndLocation: (loc) => set({ endLocation: loc }),

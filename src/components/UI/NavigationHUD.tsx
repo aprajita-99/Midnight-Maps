@@ -5,6 +5,7 @@ import {
   RotateCcw, AlertTriangle, Clock, Milestone,
 } from 'lucide-react';
 import type { UseNavigationReturn } from '../../hooks/useNavigation';
+import { useNavigationStore } from '../../store/useNavigationStore';
 
 interface NavigationHUDProps {
   nav: UseNavigationReturn;
@@ -32,10 +33,23 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
     isOffRoute, stopNavigation,
   } = nav;
 
+  // 1. Extract the remote control for our Trip Summary Modal
+  const { setShowTripSummary } = useNavigationStore();
+
   if (!isNavigating) return null;
 
   const currentStep = steps[currentStepIndex];
   const nextStep    = steps[currentStepIndex + 1];
+
+  // 2. The Intercept Function
+  const handleEndNavigation = () => {
+    // Pop open the rating modal!
+    setShowTripSummary(true); 
+    
+    // Notice we DO NOT clear the map or stop the route here yet!
+    // We let the modal handle clearing the map after the user rates it, 
+    // ensuring the route stays visible in the background and the AI gets the data.
+  };
 
   return createPortal(
     <div className="fixed inset-0 z-[8000] pointer-events-none">
@@ -107,7 +121,7 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
         transition={{ type: 'spring', bounce: 0.2, duration: 0.5, delay: 0.1 }}
         className="pointer-events-auto absolute bottom-0 left-0 right-0"
       >
-        <div className="bg-gray-900/95 backdrop-blur-xl border-t border-white/10 shadow-2xl px-6 py-4 flex items-center justify-between gap-4">
+        <div className="bg-dark-900/95 backdrop-blur-xl border-t border-white/10 shadow-2xl px-6 py-4 flex items-center justify-between gap-4">
           {/* ETA chips */}
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-2">
@@ -126,11 +140,11 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
             Step {currentStepIndex + 1} of {steps.length}
           </div>
 
-          {/* End navigation */}
+          {/* 3. Updated End Navigation Button */}
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
-            onClick={stopNavigation}
+            onClick={handleEndNavigation}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-red-500/90 hover:bg-red-500 text-white text-sm font-bold shadow-lg transition-colors"
           >
             <X size={15} strokeWidth={2.5} />
