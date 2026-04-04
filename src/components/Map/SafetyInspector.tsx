@@ -12,7 +12,8 @@ export default function SafetyInspector() {
     const [position, setPosition] = useState<{ lat: number, lng: number } | null>(null);
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
-    
+    const [isRatingComplete, setIsRatingComplete] = useState(false);
+
     // AI Feedback State
     const { feedbackStatus, submitFeedback } = useNavigationStore();
     const [hoveredStar, setHoveredStar] = useState(0);
@@ -34,7 +35,8 @@ export default function SafetyInspector() {
     const fetchData = async (lat: number, lng: number) => {
         setIsLoading(true);
         // Reset stars when fetching a new street
-        setSubmittedRating(0); 
+        setSubmittedRating(0);
+        setIsRatingComplete(false);
         try {
             const res = await fetch(`/api/segments/nearest?lat=${lat}&lng=${lng}`);
             const json = await res.json();
@@ -65,7 +67,7 @@ export default function SafetyInspector() {
             num = Number(val);
             if (isNaN(num)) num = 0.5;
         }
-        return Math.min(num / max, 1.0); 
+        return Math.min(num / max, 1.0);
     };
 
     const renderFeature = (icon: any, label: string, val: number, max: number = 1) => {
@@ -146,7 +148,7 @@ export default function SafetyInspector() {
                                     <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">Scanning Street...</span>
                                 </motion.div>
                             ) : data ? (
-                                
+
                                 <motion.div
                                     key="data"
                                     initial={{ opacity: 0, scale: 0.9 }}
@@ -166,43 +168,51 @@ export default function SafetyInspector() {
                                     </div>
 
                                     {/* 🌟 AI Reinforcement Learning Segment Tool */}
-                                    <div className="mt-4 pt-3 border-t border-white/10 flex flex-col items-center gap-1.5">
-                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                                            {feedbackStatus ? "Segment Learned!" : "Rate this street"}
-                                        </p>
-                                        
-                                        {feedbackStatus ? (
-                                            <p className="text-[10px] text-primary-green font-bold bg-primary-green/10 border border-primary-green/20 px-3 py-1 rounded-full animate-pulse">
-                                                Feedback sent to AI Agent
+                                    {!isRatingComplete && (
+                                        <div className="mt-4 pt-3 border-t border-white/10 flex flex-col items-center gap-1.5">
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                                                {/* Instantly switch text when a rating is submitted locally */}
+                                                {submittedRating > 0 ? "Segment Learned!" : "Rate this street"}
                                             </p>
-                                        ) : (
-                                            <div className="flex gap-1">
-                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                    <button
-                                                        key={star}
-                                                        onMouseEnter={() => setHoveredStar(star)}
-                                                        onMouseLeave={() => setHoveredStar(0)}
-                                                        onClick={() => {
-                                                            setSubmittedRating(star);
-                                                            // Send the specific segment_id they clicked to the AI
-                                                            submitFeedback('segment', data.segment_id, star); 
-                                                        }}
-                                                        className="transition-transform hover:scale-125 focus:outline-none cursor-pointer"
-                                                    >
-                                                        <Star 
-                                                            size={20} 
-                                                            className={clsx(
-                                                                "transition-colors duration-200",
-                                                                (hoveredStar || submittedRating) >= star 
-                                                                    ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.5)]" 
-                                                                    : "text-gray-600"
-                                                            )} 
-                                                        />
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+
+                                            {/* If they submitted a rating, instantly hide stars and show success to prevent double clicks */}
+                                            {submittedRating > 0 ? (
+                                                <p className="text-[10px] text-primary-green font-bold bg-primary-green/10 border border-primary-green/20 px-3 py-1 rounded-full animate-pulse">
+                                                    Feedback sent to AI Agent
+                                                </p>
+                                            ) : (
+                                                <div className="flex gap-1">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <button
+                                                            key={star}
+                                                            onMouseEnter={() => setHoveredStar(star)}
+                                                            onMouseLeave={() => setHoveredStar(0)}
+                                                            onClick={() => {
+                                                                setSubmittedRating(star); // Instantly hides the stars
+                                                                submitFeedback('segment', data.segment_id, star);
+
+                                                                // Remove the entire box after 3 seconds
+                                                                setTimeout(() => {
+                                                                    setIsRatingComplete(true);
+                                                                }, 3000);
+                                                            }}
+                                                            className="transition-transform hover:scale-125 focus:outline-none cursor-pointer"
+                                                        >
+                                                            <Star
+                                                                size={20}
+                                                                className={clsx(
+                                                                    "transition-colors duration-200",
+                                                                    (hoveredStar || submittedRating) >= star
+                                                                        ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.5)]"
+                                                                        : "text-gray-600"
+                                                                )}
+                                                            />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </motion.div>
                             ) : (
                                 <motion.div
