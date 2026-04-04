@@ -22,14 +22,16 @@ export default function RouteCard({ route, index, isSelected, onClick }: RouteCa
   const isSafest = index === safestRouteIndex;
   const isBalanced = index === balancedRouteIndex;
 
-  const getLabel = () => {
-    if (isSafest) return { text: 'Safest', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
-    if (isBalanced) return { text: 'Balanced', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' };
-    if (isShortest) return { text: 'Shortest', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
-    return null;
+  // CHANGED: Now returns an array of all applicable labels instead of just the first one
+  const getLabels = () => {
+    const labels = [];
+    if (isSafest) labels.push({ text: 'Safest', color: 'bg-green-500/20 text-green-400 border-green-500/30' });
+    if (isBalanced) labels.push({ text: 'Balanced', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' });
+    if (isShortest) labels.push({ text: 'Shortest', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' });
+    return labels;
   };
 
-  const label = getLabel();
+  const labels = getLabels();
 
   return (
     <motion.div 
@@ -48,20 +50,23 @@ export default function RouteCard({ route, index, isSelected, onClick }: RouteCa
     >
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className={clsx("font-bold text-xl tracking-tight", isSelected ? "text-primary-green" : "text-white")}>
               Route {index + 1}
             </h3>
-            {label && (
-              <span className={clsx("text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full border", label.color)}>
-                {label.text}
-              </span>
-            )}
+            {/* CHANGED: Map over the array to render multiple badges */}
+            <div className="flex flex-wrap gap-1 mt-0.5">
+              {labels.map((label, i) => (
+                <span key={i} className={clsx("text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full border", label.color)}>
+                  {label.text}
+                </span>
+              ))}
+            </div>
           </div>
-          <span className="text-xs text-gray-400 truncate max-w-[200px]">via {route.summary}</span>
+          <span className="text-xs text-gray-400 truncate max-w-[200px] mt-1">via {route.summary}</span>
         </div>
         
-        <div className="flex flex-col items-end">
+        <div className="flex flex-col items-end shrink-0 ml-2">
           <span className={clsx("text-xl font-black tracking-tighter", isSelected ? "text-primary-green" : "text-white")}>
             {leg.duration?.text || "ETA --"}
           </span>

@@ -63,7 +63,6 @@ const findNearestScoredSegment = async (lat, lng, radius = 150) => {
     },
   });
 };
-
 /**
  * Aligns Google Routes with safety data and computes safety metrics
  * POST /api/segments/analyze-routes
@@ -78,13 +77,15 @@ exports.analyzeRoutes = async (req, res) => {
     const timeSlot = Math.floor(new Date().getHours() / 2);
     const analysisResults = [];
 
-    for (let routeIndex = 0; routeIndex < routes.length; routeIndex++) {
-      const route = routes[routeIndex];
+    // FIX 1: Process routes in parallel to prevent massive bottlenecks and timeouts
+    await Promise.all(routes.map(async (route, routeIndex) => {
       const points = route.points;
       const segmentScores = [];
 
-      const sampleRate = points.length > 50 ? Math.ceil(points.length / 50) : 1;
+      // Sample a maximum of 100 points per route to keep memory stable
+      const sampleRate = points.length > 100 ? Math.ceil(points.length / 100) : 1;
       
+      const fetchPromises = [];
       for (let i = 0; i < points.length - 1; i += sampleRate) {
         const p1 = points[i];
         const p2 = points[i + sampleRate] || points[points.length - 1];
@@ -92,54 +93,92 @@ exports.analyzeRoutes = async (req, res) => {
         const midLat = (p1.lat + p2.lat) / 2;
         const midLng = (p1.lng + p2.lng) / 2;
         
-        const matchedSegment = await findNearestScoredSegment(midLat, midLng, 150);
-        if (matchedSegment) {
-          segmentScores.push(matchedSegment.scores[timeSlot]);
-        } else {
-          segmentScores.push(0.5); // Fallback to neutral
-        }
+        // FIX 2: Radius bumped to 500m. Google's overview_path simplifies long straight lines, 
+        // meaning midpoints frequently land far from actual DB intersections.
+        fetchPromises.push(findNearestScoredSegment(midLat, midLng, 500));
       }
 
+      // Execute all geospatial DB queries for this route concurrently
+      const matchedSegments = await Promise.all(fetchPromises);
+
+      matchedSegments.forEach(matchedSegment => {
+        if (matchedSegment && matchedSegment.scores && matchedSegment.scores.length > timeSlot) {
+          segmentScores.push(matchedSegment.scores[timeSlot]);
+        } else {
+          segmentScores.push(0.5); // Fallback neutral if completely unmapped
+        }
+      });
+
+      // --- NEW MATHEMATICAL SCORING ---
       const meanSafety = segmentScores.reduce((a, b) => a + b, 0) / (segmentScores.length || 1);
-      const risk = segmentScores.reduce((a, b) => a + (1 - b), 0);
       const minScore = segmentScores.length > 0 ? Math.min(...segmentScores) : 0.5;
+      
+      // FIX 3: Risk is now the PROPORTION of the route that is heavily dangerous (score < 0.45). 
+      // If risk is 0.15, it means 15% of the route is in a red zone. The UI can easily format this.
+      const dangerousPoints = segmentScores.filter(s => s < 0.45).length;
+      const risk = dangerousPoints / (segmentScores.length || 1);
 
       analysisResults.push({
         routeIndex,
         meanSafety,
-        risk,
+        risk, 
         minScore,
         distance: route.distance,
         duration: route.duration,
       });
-    }
+    }));
 
-    const shortestRouteIndex = 0;
+    // Ensure array is sorted back to original index order (Promise.all resolves randomly)
+    analysisResults.sort((a, b) => a.routeIndex - b.routeIndex);
 
-    let safestIndex = 0;
-    let maxMean = -1;
+    // ---------------------------------------------
+    // FIX 4: The Route Selection Algorithms
+    // ---------------------------------------------
+    
+    let shortestRouteIndex = 0;
+    let minDuration = Infinity;
+    
     analysisResults.forEach((res, idx) => {
-      if (res.meanSafety > maxMean) {
-        maxMean = res.meanSafety;
-        safestIndex = idx;
-      } else if (res.meanSafety === maxMean && res.minScore > analysisResults[safestIndex].minScore) {
+      if (res.duration < minDuration) {
+        minDuration = res.duration;
+        shortestRouteIndex = idx;
+      }
+    });
+
+    // 2. SAFEST ROUTE (Strictly maximum safety score)
+    let safestIndex = 0;
+    let maxSafetyMetric = -1;
+    
+    analysisResults.forEach((res, idx) => {
+      // Weigh the average safety (70%) and minimum safety (30%)
+      const safetyMetric = (res.meanSafety * 0.7) + (res.minScore * 0.3);
+      if (safetyMetric > maxSafetyMetric) {
+        maxSafetyMetric = safetyMetric;
         safestIndex = idx;
       }
     });
 
-    const maxDist = Math.max(...analysisResults.map(r => r.distance));
+    // 3. BALANCED ROUTE (Safety minus Detour Penalty)
     let balancedIndex = 0;
-    let maxFinal = -Infinity;
+    let maxBalancedScore = -Infinity;
+    
     analysisResults.forEach((res, idx) => {
-      const normalizedDist = res.distance / (maxDist || 1);
-      const finalScore = 0.6 * res.meanSafety - 0.4 * normalizedDist;
-      if (finalScore > maxFinal) {
-        maxFinal = finalScore;
+      // How much longer is this route compared to the absolute fastest?
+      // e.g., 600s vs 500s -> (600-500)/500 = 0.20 (It takes 20% more time)
+      const timePenalty = (res.duration - minDuration) / (minDuration || 1);
+      
+      // We start with the Mean Safety, but penalize it if it takes too long.
+      // A 20% detour drops the safety score by 0.15 points (0.20 * 0.75).
+      // If the safety gain is less than 0.15, the algorithm will stick to the faster route!
+      const balancedScore = res.meanSafety - (timePenalty * 0.75);
+      
+      if (balancedScore > maxBalancedScore) {
+        maxBalancedScore = balancedScore;
         balancedIndex = idx;
       }
     });
 
-    console.log(`[DEBUG] Indices - Shortest: ${shortestRouteIndex}, Safest: ${safestIndex}, Balanced: ${balancedIndex}`);
+    console.log(`[DEBUG] Computed Indices -> Shortest: ${shortestRouteIndex}, Safest: ${safestIndex}, Balanced: ${balancedIndex}`);
 
     res.status(200).json({
       success: true,
