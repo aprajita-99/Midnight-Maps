@@ -10,6 +10,7 @@ import { MapDarkTheme } from './MapDarkTheme.ts';
 import { useDirections } from '../../hooks/useDirections.ts';
 import type { UserLocation } from '../../hooks/useUserLocation.ts';
 import type { NavState } from '../../hooks/useNavigation.ts';
+import SafetyInspector from './SafetyInspector';
 
 interface MapViewProps {
   userLocation?: UserLocation | null;
@@ -374,22 +375,8 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
           }}
         />
 
-        {/* Safety Segment Markers */}
-        {!isNav && nearbySegments.map((seg) => (
-          <Marker
-            key={seg.segment_id}
-            position={seg.midpoint}
-            icon={{
-              path: window.google.maps.SymbolPath.CIRCLE,
-              scale: 6,
-              fillColor: getColor(seg.features.environment),
-              fillOpacity: 1,
-              strokeWeight: 2,
-              strokeColor: '#ffffff',
-            }}
-            zIndex={5}
-          />
-        ))}
+        {/* 2. Add the Safety Inspector so it only mounts when NOT navigating */}
+        {!isNav && <SafetyInspector />}
 
         {/* Navigation arrow at user's GPS position */}
         {isNav && navState.currentLat !== null && navState.currentLng !== null && (
