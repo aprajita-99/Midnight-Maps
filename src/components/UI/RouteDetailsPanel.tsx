@@ -86,12 +86,11 @@ export default function RouteDetailsPanel() {
   }, [directionsResult]);
   if (!analysis) return null;
 
-  const base = analysis.meanSafety;
-  const features = {
-    lighting: Math.min(base * 1.2, 1.0),
-    camera: Math.max(base * 0.8, 0.1),
-    activity: base,
-    environment: Math.min(base * 1.1, 1.0)
+  const features = analysis.features || {
+    lighting: 0,
+    camera: 0,
+    activity: 0,
+    environment: 0
   };
 
 

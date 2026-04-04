@@ -50,7 +50,10 @@ export default function SafetyInspector() {
   const parseScore = (val: any, max: number = 1) => {
     let num = 0;
     if (Array.isArray(val)) {
-      num = val.length > 0 ? val.reduce((a, b) => a + b, 0) / val.length : 0.5;
+      // Instead of averaging, get the current 2-hour slot
+      const currentHour = new Date().getHours();
+      const slotIndex = Math.floor(currentHour / 2);
+      num = val.length > 0 ? val[slotIndex] : 0.5;
     } else {
       num = Number(val);
       if (isNaN(num)) num = 0.5;

@@ -23,7 +23,11 @@ export default function StreetViewPanel({
   const [currentSegment, setCurrentSegment] = useState<any>(null);
   const [hudStatus, setHudStatus] = useState<'loading' | 'ready' | 'no_data'>('loading');
 
-  const average = (arr: number[]) => (arr && arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+  // Calculates which of the 12 time slots corresponds to the user's current local time
+  const getCurrentTimeSlot = () => {
+    const currentHour = new Date().getHours(); // Gets local hour (0-23)
+    return Math.floor(currentHour / 2); // Maps to index 0-11
+  };
 
   const updateHUD = useCallback(async (lat: number, lng: number) => {
     try {
@@ -178,28 +182,29 @@ export default function StreetViewPanel({
                 </div>
               ) : currentSegment && (
                 <div className="space-y-3">
-                  <HUDItem 
-                    icon={<Sun size={14} />} 
-                    label="Lighting" 
-                    value={average(currentSegment.features.lighting).toFixed(2)} 
+                  <HUDItem
+                    icon={<Sun size={14} />}
+                    label="Lighting"
+                    // Safely grabs the current 2-hour block, defaulting to 0 if the array is missing
+                    value={(currentSegment.features.lighting?.[getCurrentTimeSlot()] ?? 0).toFixed(2)}
                     color="text-yellow-400"
                   />
-                  <HUDItem 
-                    icon={<Activity size={14} />} 
-                    label="Activity" 
-                    value={currentSegment.features.activity_score.toFixed(2)} 
+                  <HUDItem
+                    icon={<Activity size={14} />}
+                    label="Activity"
+                    value={currentSegment.features.activity_score.toFixed(2)}
                     color="text-green-400"
                   />
-                  <HUDItem 
-                    icon={<Shield size={14} />} 
-                    label="Environment" 
-                    value={currentSegment.features.environment.toFixed(2)} 
+                  <HUDItem
+                    icon={<Shield size={14} />}
+                    label="Environment"
+                    value={currentSegment.features.environment.toFixed(2)}
                     color="text-blue-400"
                   />
-                  <HUDItem 
-                    icon={<Camera size={14} />} 
-                    label="Camera" 
-                    value={currentSegment.features.camera.toFixed(2)} 
+                  <HUDItem
+                    icon={<Camera size={14} />}
+                    label="Camera"
+                    value={currentSegment.features.camera.toFixed(2)}
                     color="text-purple-400"
                   />
                 </div>
@@ -221,7 +226,7 @@ function HUDItem({ icon, label, value, color }: { icon: React.ReactNode, label: 
       </div>
       <div className="flex items-center gap-2">
         <div className="w-16 h-1 rounded-full bg-white/10 overflow-hidden">
-          <motion.div 
+          <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${parseFloat(value) * 100}%` }}
             className={`h-full bg-current ${color}`}

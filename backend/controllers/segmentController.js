@@ -50,18 +50,27 @@ exports.getScoredSegments = async (req, res, next) => {
 // --- NEW Routing Logic ---
 
 // Helper for finding nearest scored segment for a point
-const findNearestScoredSegment = async (lat, lng, radius = 150) => {
-  return await ScoredSegment.findOne({
+// Helper: Finds the nearest road segment, then fetches its pre-computed scores
+const findSegmentData = async (lat, lng, radius = 500) => {
+  // 1. Find the physical road segment (for features)
+  const roadSegment = await RoadSegment.findOne({
     location: {
       $near: {
-        $geometry: {
-          type: 'Point',
-          coordinates: [lng, lat],
-        },
+        $geometry: { type: 'Point', coordinates: [lng, lat] },
         $maxDistance: radius,
       },
     },
   });
+
+  if (!roadSegment) return null;
+
+  // 2. Find the matching scored segment (for overall safety)
+  const scoredSegment = await ScoredSegment.findOne({ segment_id: roadSegment.segment_id });
+
+  return {
+    features: roadSegment.features,
+    scores: scoredSegment ? scoredSegment.scores : null
+  };
 };
 /**
  * Aligns Google Routes with safety data and computes safety metrics
@@ -93,28 +102,59 @@ exports.analyzeRoutes = async (req, res) => {
         const midLat = (p1.lat + p2.lat) / 2;
         const midLng = (p1.lng + p2.lng) / 2;
         
-        // FIX 2: Radius bumped to 500m. Google's overview_path simplifies long straight lines, 
-        // meaning midpoints frequently land far from actual DB intersections.
-        fetchPromises.push(findNearestScoredSegment(midLat, midLng, 500));
+        // Use the new combined helper
+        fetchPromises.push(findSegmentData(midLat, midLng, 500));
       }
 
-      // Execute all geospatial DB queries for this route concurrently
       const matchedSegments = await Promise.all(fetchPromises);
 
-      matchedSegments.forEach(matchedSegment => {
-        if (matchedSegment && matchedSegment.scores && matchedSegment.scores.length > timeSlot) {
-          segmentScores.push(matchedSegment.scores[timeSlot]);
+      // Variables to track individual feature averages
+      let totalLighting = 0, totalActivity = 0, totalCamera = 0, totalEnvironment = 0;
+      let validFeatureCount = 0;
+
+      matchedSegments.forEach(data => {
+        // --- 1. HANDLE OVERALL SAFETY SCORE ---
+        if (data && data.scores && data.scores.length > timeSlot) {
+          segmentScores.push(data.scores[timeSlot]);
         } else {
-          segmentScores.push(0.5); // Fallback neutral if completely unmapped
+          segmentScores.push(0.5); // Fallback neutral
+        }
+
+        // --- 2. HANDLE INDIVIDUAL UI FEATURES ---
+        if (data && data.features) {
+          const f = data.features;
+          
+          // Time-aware arrays (fallback to 0.5 if missing)
+          const lightingVal = Array.isArray(f.lighting) ? (f.lighting[timeSlot] ?? 0.5) : (f.lighting ?? 0.5);
+          const activityVal = Array.isArray(f.activity) ? (f.activity[timeSlot] ?? 0.5) : (f.activity ?? 0.5);
+          
+          // Normalize camera count to 0.0 - 1.0 (assuming 5 cameras = 100% coverage)
+          const cameraVal = Math.min((f.camera ?? 0) / 5, 1.0);
+          
+          // Environment is static
+          const envVal = f.environment ?? 0.5;
+
+          totalLighting += lightingVal;
+          totalActivity += activityVal;
+          totalCamera += cameraVal;
+          totalEnvironment += envVal;
+          
+          validFeatureCount++;
+        }else {
+          totalLighting += 0.5;
+          totalActivity += 0.5;
+          totalCamera += 0.5;
+          totalEnvironment += 0.5;
+          validFeatureCount++;
         }
       });
 
-      // --- NEW MATHEMATICAL SCORING ---
+      // Prevent division by zero
+      const featureDivisor = validFeatureCount || 1;
+
+      // --- MATHEMATICAL SCORING ---
       const meanSafety = segmentScores.reduce((a, b) => a + b, 0) / (segmentScores.length || 1);
       const minScore = segmentScores.length > 0 ? Math.min(...segmentScores) : 0.5;
-      
-      // FIX 3: Risk is now the PROPORTION of the route that is heavily dangerous (score < 0.45). 
-      // If risk is 0.15, it means 15% of the route is in a red zone. The UI can easily format this.
       const dangerousPoints = segmentScores.filter(s => s < 0.45).length;
       const risk = dangerousPoints / (segmentScores.length || 1);
 
@@ -125,6 +165,13 @@ exports.analyzeRoutes = async (req, res) => {
         minScore,
         distance: route.distance,
         duration: route.duration,
+        // Send the real, averaged features to the frontend
+        features: {
+          lighting: totalLighting / featureDivisor,
+          activity: totalActivity / featureDivisor,
+          camera: totalCamera / featureDivisor,
+          environment: totalEnvironment / featureDivisor
+        }
       });
     }));
 

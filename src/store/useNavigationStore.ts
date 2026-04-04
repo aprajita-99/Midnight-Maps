@@ -18,6 +18,12 @@ export interface RouteMetric {
   distance: number;
   duration: number;
   label?: 'Shortest' | 'Safest' | 'Balanced' | null;
+  features?: {
+    lighting: number;
+    camera: number;
+    activity: number;
+    environment: number;
+  };
 }
 
 interface NavigationState {
