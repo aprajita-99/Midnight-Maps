@@ -15,14 +15,24 @@ function computeSafetyScores(features) {
 
   for (let t = 0; t < 12; t++) {
     // 1. Safely extract time-slot values (Fallback to 0.5 if data is missing/corrupted)
-    const L = Array.isArray(features.lighting) ? (features.lighting[t] ?? 0.5) : (features.lighting ?? 0.5);
+    let L = Array.isArray(features.lighting) ? (features.lighting[t] ?? 0.5) : (features.lighting ?? 0.5);
     const A = Array.isArray(features.activity) ? (features.activity[t] ?? 0.5) : (features.activity ?? 0.5);
     
     // Environment is usually static, but we check for arrays just in case
     const E = Array.isArray(features.environment) ? (features.environment[t] ?? 0.5) : (features.environment ?? 0.5);
     
     // Camera is already normalized (0-1)
-    const C = Array.isArray(features.camera) ? (features.camera[t] ?? 0.5) : (features.camera ?? 0.5);
+    let C = Array.isArray(features.camera) ? (features.camera[t] ?? 0.5) : (features.camera ?? 0.5);
+
+    // --- NEW LOGIC START ---
+    // Slots 3 through 8 represent 6:00 AM to 6:00 PM. Sunlight provides 100% illumination.
+    if (t >= 3 && t <= 8) {
+      L = 1.0; 
+    }
+    
+    // Apply the 35% universal camera boost, capped at 1.0
+    C = Math.min(1.0, C * 1.35);
+    // --- NEW LOGIC END ---
 
     // 2. Calculate Base Weighted Score
     let baseScore = (L * WEIGHTS.LIGHTING) + 

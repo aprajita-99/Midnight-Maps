@@ -45,6 +45,7 @@ export default function RouteInsightsPanel() {
     setShowLamps,
     showPolice,
     setShowPolice,
+    isDemoNightMode
   } = useNavigationStore();
 
   const analysis = routeAnalysis?.[selectedRouteIndex];
@@ -56,6 +57,19 @@ export default function RouteInsightsPanel() {
     activity: 0,
     environment: 0,
   };
+
+  // --- NEW LOGIC START ---
+  const currentHour = new Date().getHours();
+  // It is daytime if we are NOT in demo night mode, and the hour is between 6 AM and 6 PM.
+  const isDaytime = !isDemoNightMode && (currentHour >= 6 && currentHour < 18);
+  
+  // 1. If daytime, lighting is naturally 100%. Otherwise, use the streetlamp data.
+  const finalLighting = isDaytime ? 1.0 : features.lighting;
+  
+  // 2. Boost camera coverage by 35% everywhere to account for wide-angle views, cap at 100%
+  const finalCamera = Math.min(1.0, features.camera * 1.35);
+  // --- NEW LOGIC END ---
+
   const safetyScore = Math.round((analysis.meanSafety ?? 0) * 100);
   const riskScore = Math.round((analysis.risk ?? 0) * 100);
 
@@ -117,8 +131,8 @@ export default function RouteInsightsPanel() {
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-        {renderProgressBar('Lighting', <Lightbulb size={12} />, features.lighting)}
-        {renderProgressBar('Surveillance', <Video size={12} />, features.camera)}
+        {renderProgressBar('Lighting', <Lightbulb size={12} />, finalLighting)}
+        {renderProgressBar('Surveillance', <Video size={12} />, finalCamera)}
         {renderProgressBar('Activity', <Activity size={12} />, features.activity)}
         {renderProgressBar('Context', <TreePine size={12} />, features.environment)}
       </div>
