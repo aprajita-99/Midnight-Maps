@@ -128,9 +128,9 @@ The panel computes its own **local safety score** client-side using the same for
 
 ### 🗺️ Map Overlays
 
-<img width="142" height="744" alt="Screenshot 2026-04-06 015451" src="https://github.com/user-attachments/assets/172456a7-df83-4561-b16b-d2281b7990ee" />
+## 🗺️ Map Overlays
 
-
+<img align="left" width="142" alt="Screenshot 2026-04-06 015451" src="https://github.com/user-attachments/assets/172456a7-df83-4561-b16b-d2281b7990ee" />
 
 | Overlay | Toggle | Data Source |
 |---------|--------|-------------|
@@ -141,6 +141,7 @@ The panel computes its own **local safety score** client-side using the same for
 | 🔔 Nearby Alerts | `NearbyAlertsToggle` | Google Places API (live) |
 | 🌙 Night Mode | `TimeModeToggle` | Dark map style override |
 
+<br clear="left"/>
 ---
 
 ### 🧭 Navigation Simulation
