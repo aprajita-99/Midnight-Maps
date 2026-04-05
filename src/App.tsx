@@ -128,7 +128,6 @@ function App() {
         <NavigationHUD nav={nav} />
         {!isNavigating && svStatus !== 'open' && <RouteMetricsOverlay />}
         
-        {/* Global Search Bar — replace the mini panel */}
         <AnimatePresence>
           {!isSidebarOpen && !isNavigating && svStatus !== 'open' && (
             <GlobalSearch 
