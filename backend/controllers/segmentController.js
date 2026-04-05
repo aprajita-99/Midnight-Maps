@@ -3,7 +3,7 @@ const ScoredSegment = require('../models/ScoredSegment');
 const segmentService = require('../services/segmentService');
 const scoringService = require('../services/scoringService');
 const generateSegmentId = require('../utils/generateSegmentId');
-
+const redisClient = require('../config/redis');
 
 exports.createSegment = async (req, res, next) => {
   try {
@@ -224,6 +224,27 @@ exports.analyzeRoutes = async (req, res) => {
     const timeSlot = Number.isInteger(parsedTimeSlot)
       ? Math.min(Math.max(parsedTimeSlot, 0), 11)
       : Math.floor(new Date().getHours() / 2);
+
+const firstRoute = routes[0];
+    const startPoint = firstRoute.points[0];
+    const endPoint = firstRoute.points[firstRoute.points.length - 1];
+
+    const startLat = Number(startPoint.lat).toFixed(3);
+    const startLng = Number(startPoint.lng).toFixed(3);
+    const endLat = Number(endPoint.lat).toFixed(3);
+    const endLng = Number(endPoint.lng).toFixed(3);
+
+    const cacheKey = `route_analysis:${startLat},${startLng}:to:${endLat},${endLng}:time:${timeSlot}`;
+
+    const cachedAnalysis = await redisClient.get(cacheKey);
+    if (cachedAnalysis) {
+      console.log(`[Cache HIT] Fast-loading route analysis: ${cacheKey}`);
+      // Parse and return immediately! Skip all the math below.
+      return res.status(200).json(JSON.parse(cachedAnalysis));
+    }
+
+    console.log(`[Cache MISS] Running heavy math for route analysis...`);
+
     const analysisResults = [];
 
      await Promise.all(routes.map(async (route, routeIndex) => {
@@ -347,16 +368,14 @@ let rawMeanSafety = weightedSafetySum / (totalRouteDistanceMeters || 1);
     
     analysisResults.forEach((res, idx) => {
       const timePenalty = (res.duration - minDuration) / (minDuration || 1);
-      
       const balancedScore = res.meanSafety - (timePenalty * 0.75);
-      
       if (balancedScore > maxBalancedScore) {
         maxBalancedScore = balancedScore;
         balancedIndex = idx;
       }
     });
 
-    res.status(200).json({
+    const finalResponse = {
       success: true,
       routes: analysisResults,
       indices: {
@@ -364,7 +383,10 @@ let rawMeanSafety = weightedSafetySum / (totalRouteDistanceMeters || 1);
         safest: safestIndex,
         balanced: balancedIndex
       }
-    });
+    };
+
+    await redisClient.setEx(cacheKey, 43200, JSON.stringify(finalResponse));
+    res.status(200).json(finalResponse);
 
   } catch (error) {
     console.error('Route analysis error:', error);
@@ -372,7 +394,7 @@ let rawMeanSafety = weightedSafetySum / (totalRouteDistanceMeters || 1);
   }
 };
 
-// Fetch segment by ID
+
 exports.getSegmentById = async (req, res, next) => {
   try {
     const segment = await RoadSegment.findOne({ segment_id: req.params.id });
@@ -383,8 +405,6 @@ exports.getSegmentById = async (req, res, next) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-
-// Update only features
 exports.updateSegmentFeatures = async (req, res, next) => {
   try {
     const { features } = req.body;
@@ -398,18 +418,30 @@ exports.updateSegmentFeatures = async (req, res, next) => {
 
     if (!segment) return res.status(404).json({ success: false, message: 'Segment not found' });
     
+    await redisClient.del(`segment:${req.params.id}`);
+
     res.status(200).json({ success: true, data: segment });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-
-// Get segments near location (Geospatial query)
 exports.getSegmentsNearLocation = async (req, res, next) => {
   try {
     const { lat, lng, radius = 500 } = req.query;
     if (!lat || !lng) return res.status(400).json({ success: false, message: 'lat and lng required' });
 
+    const roundedLat = Number(lat).toFixed(4);
+    const roundedLng = Number(lng).toFixed(4);
+    const cacheKey = `segments:near:${roundedLat}:${roundedLng}:${radius}`;
+
+    const cachedData = await redisClient.get(cacheKey);
+    if (cachedData) {
+      console.log(`[Cache HIT] Serving from Redis: ${cacheKey}`);
+      const parsedData = JSON.parse(cachedData);
+      return res.status(200).json({ success: true, count: parsedData.length, data: parsedData, source: 'cache' });
+    }
+
+    console.log(`[Cache MISS] Querying MongoDB: ${cacheKey}`);
     const segments = await RoadSegment.find({
       location: {
         $near: {
@@ -422,13 +454,13 @@ exports.getSegmentsNearLocation = async (req, res, next) => {
       },
     });
 
-    res.status(200).json({ success: true, count: segments.length, data: segments });
+    await redisClient.setEx(cacheKey, 3600, JSON.stringify(segments));
+
+    res.status(200).json({ success: true, count: segments.length, data: segments,source: 'database' });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-
-// Get the absolute nearest segment for Street View HUD using native geospatial search
 exports.getNearestSegment = async (req, res, next) => {
   try {
     const { lat, lng } = req.query;
