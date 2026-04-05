@@ -1,17 +1,23 @@
+const NIGHT_WEIGHTS = {
+  LIGHTING: 0.40, // Crucial at night
+  ACTIVITY: 0.25,
+  ENVIRONMENT: 0.20,
+  CAMERA: 0.15
+};
+
+const DAY_WEIGHTS = {
+  LIGHTING: 0.50, // Highly weighted, and forced to 1.0 during the day, creating a high safety baseline
+  ACTIVITY: 0.10, // Less impact during the day
+  ENVIRONMENT: 0.30, // Environment still matters (e.g., isolated areas are still slightly riskier)
+  CAMERA: 0.10  // Less impact during the day
+};
+
 /**
  * Computes a 12-slot array of safety scores (0.0 to 1.0) based on 4 features.
  * Represents 2-hour intervals for a full 24-hour cycle.
  */
 function computeSafetyScores(features) {
   const scores = [];
-
-  // Weight distribution (Must sum to 1.0)
-  const WEIGHTS = {
-    LIGHTING: 0.35,    // Visibility is paramount at night
-    ACTIVITY: 0.35,    // "Eyes on the street" provides active deterrence
-    ENVIRONMENT: 0.20, // Structural safety (openness vs isolation)
-    CAMERA: 0.10       // Surveillance (Deterrent, but mostly reactive)
-  };
 
   for (let t = 0; t < 12; t++) {
     // 1. Safely extract time-slot values (Fallback to 0.5 if data is missing/corrupted)
@@ -24,21 +30,22 @@ function computeSafetyScores(features) {
     // Camera is already normalized (0-1)
     let C = Array.isArray(features.camera) ? (features.camera[t] ?? 0.5) : (features.camera ?? 0.5);
 
-    // --- NEW LOGIC START ---
-    // Slots 3 through 8 represent 6:00 AM to 6:00 PM. Sunlight provides 100% illumination.
-    if (t >= 3 && t <= 8) {
-      L = 1.0; 
+    // --- DYNAMIC WEIGHTS & OVERRIDES ---
+    const isDaytime = (t >= 3 && t <= 8);
+    const activeWeights = isDaytime ? DAY_WEIGHTS : NIGHT_WEIGHTS;
+
+    if (isDaytime) {
+      L = 1.0; // Sun provides 100% illumination
     }
     
     // Apply the 35% universal camera boost, capped at 1.0
     C = Math.min(1.0, C * 1.35);
-    // --- NEW LOGIC END ---
 
-    // 2. Calculate Base Weighted Score
-    let baseScore = (L * WEIGHTS.LIGHTING) + 
-                    (A * WEIGHTS.ACTIVITY) + 
-                    (E * WEIGHTS.ENVIRONMENT) + 
-                    (C * WEIGHTS.CAMERA);
+    // 2. Calculate Base Weighted Score dynamically
+    let baseScore = (L * activeWeights.LIGHTING) + 
+                    (A * activeWeights.ACTIVITY) + 
+                    (E * activeWeights.ENVIRONMENT) + 
+                    (C * activeWeights.CAMERA);
 
     // 3. The "Dark and Deserted" Penalty
     // If visibility is terrible AND nobody is around, the structural/camera benefits are negated.
