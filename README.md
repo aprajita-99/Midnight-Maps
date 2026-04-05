@@ -12,10 +12,10 @@
 
 ---
 
-![Fear-Free Night Navigator Hero]![hero_banner_1775417799453](https://github.com/user-attachments/assets/0a780395-f34e-4b46-a60a-aa43d8162476)
+<img width="1919" height="948" alt="Screenshot 2026-04-06 014037" src="https://github.com/user-attachments/assets/b1ef542c-a9b1-467f-a7aa-dfc0a1e42731" />
 
 
-**A hackathon-grade full-stack navigation platform that scores every road segment for night-time safety using infrastructure data (street lighting + CCTV coverage), ambient activity patterns, and a live Reinforcement Learning feedback loop — so your route suggestions actually improve the more people use it.**
+**A comprehensive full-stack navigation platform that scores every road segment for night-time safety using infrastructure data (street lighting + CCTV coverage), ambient activity patterns, and a live Reinforcement Learning feedback loop — so your route suggestions actually improve the more people use it.**
 
 [📺 Demo](#-navigation-simulation) · [🚀 Setup](#-getting-started) · [🧠 Architecture](#-system-architecture) · [📊 Algorithm](#-safety-scoring-algorithm) · [🗂️ API Reference](#-api-reference)
 
@@ -38,7 +38,6 @@
 - [📐 Data Schema](#-data-schema)
 - [🗺️ Datasets](#-datasets)
 - [🧪 Model Evaluation](#-model-evaluation)
-- [🛡️ Evaluation Rubric Alignment](#️-evaluation-rubric-alignment)
 
 ---
 
@@ -60,8 +59,7 @@ Existing navigation apps (Google Maps, Apple Maps) optimize **purely for speed**
 ### 🛡️ AI Safety Route Ranking
 
 Three routes are compared simultaneously and ranked as **Safest**, **Balanced**, or **Fastest** — each backed by live safety score computation across every road segment.
-
-![Route Safety Cards]![feature_route_cards_1775417842858](https://github.com/user-attachments/assets/f2ed425f-183b-4c55-8fa9-7a95e688ef49)
+![feature_route_cards_1775417842858](https://github.com/user-attachments/assets/9486f651-636a-4391-8eb4-557c2aac166b)
 
 
 ```
@@ -79,7 +77,11 @@ Route Score = f(Lighting, Surveillance, Activity, Environment)
 
 ### 📷 CCTV Camera Overlay
 
-![CCTV Camera Overlay](https://raw.githubusercontent.com/your-username/fear-free-night-navigator/main/docs/feature_cameras_overlay.png)
+
+<img width="1341" height="912" alt="Screenshot 2026-04-05 222336" src="https://github.com/user-attachments/assets/a232abe3-ae92-4286-b699-4f9ba539a398" />
+
+<img width="1345" height="915" alt="Screenshot 2026-04-05 222344" src="https://github.com/user-attachments/assets/4957faa1-341d-4dac-b398-5e1b78fb7d99" />
+
 
 Toggle a live overlay of **CCTV camera locations** sourced from the `koramangala_cameras.json` dataset. Blue camera markers appear on every street with known camera coverage.
 
@@ -93,6 +95,14 @@ C_final = min(1.0, C_raw × 1.35)
 
 ### 💡 Street Lamp Overlay
 
+<!-- Add screenshot of Street Lamp Overlay here -->
+<img width="1342" height="907" alt="Screenshot 2026-04-05 222317" src="https://github.com/user-attachments/assets/6d76aeb0-5ffa-44d2-963f-72c386e710d1" />
+
+
+<img width="1348" height="908" alt="Screenshot 2026-04-05 222326" src="https://github.com/user-attachments/assets/4b203336-3e65-40ba-9716-bae8aa054cd4" />
+
+
+
 Toggle the **street lighting layer** showing amber dot markers at every recorded lamp position from `koramangala_street_lamps.json`. Lamp density directly feeds the `lighting` feature per segment.
 
 > **Why lighting is critical at night:** At night, lighting carries **40% weight** in the safety formula. A `lighting < 0.3` triggers an additional **15–30% penalty** on the base score.
@@ -100,6 +110,9 @@ Toggle the **street lighting layer** showing amber dot markers at every recorded
 ---
 
 ### 📊 Route Intelligence Panel
+
+<img width="543" height="635" alt="Screenshot 2026-04-05 215125" src="https://github.com/user-attachments/assets/c58890da-5d50-4d8a-b6a4-490797df4ed9" />
+
 
 After route analysis, a collapsible **Route Intelligence** panel shows:
 
@@ -116,6 +129,9 @@ The panel computes its own **local safety score** client-side using the same for
 
 ### 🗺️ Map Overlays
 
+<img width="142" height="744" alt="image" src="https://github.com/user-attachments/assets/09b77e56-52b4-40d8-bb85-1ff4aae358b8" />
+
+
 | Overlay | Toggle | Data Source |
 |---------|--------|-------------|
 | 📷 CCTV Cameras | `CameraToggle` | `koramangala_cameras.json` |
@@ -129,6 +145,9 @@ The panel computes its own **local safety score** client-side using the same for
 
 ### 🧭 Navigation Simulation
 
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/d2511561-7a60-4060-9dbe-670cd1b686cc" />
+
+
 A full route simulation engine drives a marker along the selected route at configurable speed (default 12 m/s ≈ 43 km/h). During simulation:
 
 - The map **rotates and tilts** with vehicle heading (60° tilt on vector-enabled maps)
@@ -139,6 +158,10 @@ A full route simulation engine drives a marker along the selected route at confi
 ---
 
 ### 🔍 Safety Inspector (Street-Level)
+<img width="1333" height="910" alt="Screenshot 2026-04-05 222037" src="https://github.com/user-attachments/assets/f1d88fc0-4c6e-47b1-92be-c33562b2bac5" />
+<img width="1345" height="915" alt="Screenshot 2026-04-05 222225" src="https://github.com/user-attachments/assets/84bb3fc2-8fed-4a09-82fa-49465f2dcf5a" />
+
+
 
 The **Safety Inspector** mode lets users inspect any segment on the map and see its raw safety features — lighting profile, camera coverage, activity profile — without leaving the map.
 
@@ -146,11 +169,23 @@ The **Safety Inspector** mode lets users inspect any segment on the map and see 
 
 ### 🌐 Google Street View Integration
 
+<img width="1338" height="913" alt="Screenshot 2026-04-05 222117" src="https://github.com/user-attachments/assets/0bfdb8ce-0c4c-46a2-baac-d0e19bfe1c0b" />
+<img width="1357" height="920" alt="image" src="https://github.com/user-attachments/assets/356a6399-e2b3-410e-9bab-b1e400206115" />
+
+<img width="1355" height="920" alt="Screenshot 2026-04-05 222646" src="https://github.com/user-attachments/assets/566720f2-47d9-4de1-ac7a-fbaaf6dadf35" />
+<img width="1351" height="912" alt="Screenshot 2026-04-05 222937" src="https://github.com/user-attachments/assets/a41490f5-7997-436a-bd40-f72cd1d0de63" />
+
+
+
 A **Pegman control** lets users drop into Street View panorama at any location to visually validate the AI's safety assessment before committing to a route.
 
 ---
 
 ### ⭐ Community Feedback Loop
+
+<!-- Add screenshot of Community Feedback Loop here -->
+<img width="1340" height="1032" alt="image" src="https://github.com/user-attachments/assets/9ae84664-f316-4322-8d67-c9af32c1a9be" />
+
 
 After every trip, a **Segment Rating Panel** chunks the route into 3–5 geographic parts and asks the user to rate safety on each. This feedback is logged to **FeedbackLog** and processed by the RL agent.
 
@@ -215,7 +250,7 @@ Each road segment in the city has **4 features** extracted at import time. The s
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│              TIME-ADAPTIVE SAFETY WEIGHTS               │
+│              TIME-ADAPTIVE SAFETY WEIGHTS                │
 ├───────────────┬─────────────────┬───────────────────────┤
 │  Feature      │  Night Weight   │  Day Weight           │
 ├───────────────┼─────────────────┼───────────────────────┤
@@ -273,6 +308,9 @@ flowchart LR
 ---
 
 ## 🔄 Reinforcement Learning Pipeline
+
+<!-- Add screenshot/diagram of RL Pipeline here -->
+![RL Pipeline](placeholder_image_url_here)
 
 The system uses a **tabular RL approach** inspired by temporal-difference learning. Rather than a neural network (which would be overkill for the data volume), it maintains a **`rl_modifier` float per segment** that shifts the pre-computed base score up or down based on community feedback.
 
@@ -834,54 +872,18 @@ Expected convergence to within ε=0.05 of ground truth:
 
 ---
 
-## 🛡️ Evaluation Rubric Alignment
-
-This project was built for the **Midnight Maps Safety Navigation Hackathon**. Here's how it maps to the evaluation criteria:
-
-### ⚡ Potential Impact & Uniqueness (20%)
-
-- **Novel Problem:** No mainstream app computes night-time safety scores per road segment
-- **Community Learning:** The RL feedback loop means the product improves with every user — a network effect unique to this approach
-- **Real Infrastructure Data:** Uses actual CCTV + street lamp positions, not synthetic proxies
-
-### 🧠 DS/Algorithm & Architectural Scalability (50%)
-
-| Requirement | Implementation |
-|-------------|---------------|
-| Correct DS/Algorithm | Tabular RL (TD), inverse-safety credit assignment, distance-weighted spatial averaging |
-| Architectural Scalability | Redis caching (12h), MongoDB 2dsphere geo-index, batch processing (100 logs/cycle) |
-| AI/ML Technique | RL with confidence-weighted updates, spam detection via variance analysis |
-| Functionality | Full end-to-end: data ingestion → scoring → route ranking → simulation → feedback → retraining |
-
-### 💎 Code Quality (10%)
-
-- TypeScript throughout the frontend (strict types: `RouteMetric`, `LocationInfo`, `TravelMode`)
-- Separation of concerns: controllers → services → utils → models
-- Redis cache key design uses deterministic hashing for correctness
-- RL modifier clamping prevents runaway learning (±0.30 hard limit)
-
-### 📊 Model Evaluation & Testing (20%)
-
-- Validation table against known Koramangala street categories
-- Cache performance benchmarks documented
-- Spam detection tested with edge cases
-- RL convergence rate analyzed theoretically (α=0.20, ~20 events to ε=0.05)
-- Chokepoint penalty system handles real-world "one bad block" scenarios
-
----
-
 ## 🙏 Acknowledgements
 
 - **OpenStreetMap** contributors for the base road graph
 - **Google Maps Platform** for Directions, Places, and Street View APIs
-- Civic data sources for Koramangala CCTV and street lamp positions(OpenCity)
+- Civic data sources for Koramangala CCTV and street lamp positions
 - **Framer Motion** for the spring animation system
 
 ---
 
 <div align="center">
 
-**Built with 🌙 for the Midnight Maps Hackathon**
+**Fear-Free Night Navigator**
 
 *"The streets don't change. Our understanding of them does."*
 
