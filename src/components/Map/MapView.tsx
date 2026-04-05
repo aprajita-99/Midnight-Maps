@@ -242,44 +242,11 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
   const [coordsTooltip, setCoordsTooltip] = useState<{ lat: number, lng: number } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  const handleCopyCoords = useCallback((e: React.MouseEvent, coords: { lat: number, lng: number }) => {
-    e.stopPropagation(); // CRITICAL: Stop propagation to prevent map-click from closing the tooltip
+  const handleCopyCoords = useCallback((coords: { lat: number, lng: number }) => {
     const text = `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
-    
-    // 1. Try modern Clipboard API (Requires HTTPS/Secure Context)
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          setIsCopied(true);
-          setTimeout(() => setIsCopied(false), 2000);
-        })
-        .catch(err => {
-          console.error('[Copy Error] Clipboard API failed:', err);
-        });
-      return;
-    }
-
-    // 2. Fallback for non-secure/legacy environments (create invisible textarea)
-    try {
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      textArea.style.position = "fixed";
-      textArea.style.left = "-9999px";
-      textArea.style.top = "0";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textArea);
-      
-      if (successful) {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      }
-    } catch (err) {
-      console.error('[Copy Error] Fallback copy failed:', err);
-    }
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   }, []);
 
   // ── Navigation camera state ──────────────────────────────────────────────
@@ -721,9 +688,10 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
           styles: isDemoNightMode ? DARK_MAP_STYLE : [],
         }}
       >
-        {!isNav && <RoutePolylines />}
+        {!isNav && <RoutePolylines mapRef={internalMapRef} />}
         {isNav && (
           <RoutePolylines
+            mapRef={internalMapRef}
             isNavigating={true}
             navDirectionsResult={navState?.navDirectionsResult ?? null}
             progressDistanceMeters={navState?.progressDistanceMeters ?? null}
@@ -811,7 +779,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
                     </div>
                     <div className="flex items-center gap-2">
                       <button 
-                        onClick={(e) => handleCopyCoords(e, coordsTooltip)}
+                        onClick={() => handleCopyCoords(coordsTooltip)}
                         className={clsx(
                           "flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all duration-200 border",
                           isCopied 
@@ -826,7 +794,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
                         </span>
                       </button>
                       <button 
-                        onClick={(e) => { e.stopPropagation(); setCoordsTooltip(null); }}
+                        onClick={() => setCoordsTooltip(null)}
                         title="Close coordinates tooltip"
                         className="p-1.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition"
                       >
@@ -855,12 +823,6 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
         {/* Blue dot — only when NOT navigating */}
         {(!isNav && isLocationEnabled && userLocation) ? (
           <React.Fragment key="user-location-group">
-            <Circle
-              key="user-accuracy-circle"
-              center={{ lat: userLocation.lat, lng: userLocation.lng }}
-              radius={userLocation.accuracy ?? 30}
-              options={{ fillColor: '#4285F4', fillOpacity: 0.15, strokeOpacity: 0, clickable: false }}
-            />
             <Marker
               key="user-location-marker"
               position={{ lat: userLocation.lat, lng: userLocation.lng }}
