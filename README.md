@@ -12,7 +12,8 @@
 
 ---
 
-![Fear-Free Night Navigator Hero](https://raw.githubusercontent.com/your-username/fear-free-night-navigator/main/docs/hero_banner.png)
+![Fear-Free Night Navigator Hero]![hero_banner_1775417799453](https://github.com/user-attachments/assets/0a780395-f34e-4b46-a60a-aa43d8162476)
+
 
 **A hackathon-grade full-stack navigation platform that scores every road segment for night-time safety using infrastructure data (street lighting + CCTV coverage), ambient activity patterns, and a live Reinforcement Learning feedback loop — so your route suggestions actually improve the more people use it.**
 
@@ -60,7 +61,8 @@ Existing navigation apps (Google Maps, Apple Maps) optimize **purely for speed**
 
 Three routes are compared simultaneously and ranked as **Safest**, **Balanced**, or **Fastest** — each backed by live safety score computation across every road segment.
 
-![Route Safety Cards](https://raw.githubusercontent.com/your-username/fear-free-night-navigator/main/docs/feature_route_cards.png)
+![Route Safety Cards]![feature_route_cards_1775417842858](https://github.com/user-attachments/assets/f2ed425f-183b-4c55-8fa9-7a95e688ef49)
+
 
 ```
 Route Score = f(Lighting, Surveillance, Activity, Environment)
