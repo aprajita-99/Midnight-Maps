@@ -103,6 +103,8 @@ interface NavigationState {
 
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  isInitialLoading: boolean;
+  finishInitialLoading: () => void;
 }
 
 export const useNavigationStore = create<NavigationState>((set, get) => ({
@@ -259,4 +261,6 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
 
   setIsLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error, directionsResult: null, isLoading: false, isSimulationRunning: false }),
+  isInitialLoading: true,
+  finishInitialLoading: () => set({ isInitialLoading: false }),
 }));

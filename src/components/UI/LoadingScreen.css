@@ -1,0 +1,6 @@
+.loading-screen {
+  background: #020307;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

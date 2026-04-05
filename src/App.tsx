@@ -25,6 +25,7 @@ import { Shield, Navigation } from 'lucide-react';
 import TripSummaryModal from './components/UI/TripSummaryModal';
 import ReadmeToggle from './components/UI/ReadmeToggle';
 import ReadmeSidebar from './components/UI/ReadmeSidebar';
+import LoadingScreen from './components/UI/LoadingScreen';
 
 const DUMMY_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 type Library = 'places' | 'drawing' | 'geometry' | 'visualization';
@@ -50,8 +51,15 @@ function App() {
   const { isNavigating } = nav;
 
   // Store values for the sticky simulate button
-  const { directionsResult, startLocation, endLocation, isLoading: routeLoading } = useNavigationStore();
+  const { directionsResult, startLocation, endLocation, isLoading: routeLoading, isInitialLoading, finishInitialLoading } = useNavigationStore();
   const isRouteReady = startLocation !== null && endLocation !== null && !!directionsResult && !routeLoading;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      finishInitialLoading();
+    }, 1900);
+    return () => clearTimeout(timer);
+  }, [finishInitialLoading]);
 
   const handlePegmanDrop = (lat: number, lng: number) => {
     openStreetView(lat, lng);
@@ -313,6 +321,9 @@ function App() {
           </div>
         </div>
       </div>
+      <AnimatePresence>
+        {isInitialLoading && <LoadingScreen />}
+      </AnimatePresence>
     </div>
   );
 }
