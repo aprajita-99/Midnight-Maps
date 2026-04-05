@@ -9,14 +9,15 @@ connectDB();
 
 const PORT = process.env.PORT || 5000;
 
-
-// Scheduled to run at the start of every hour (e.g., 1:00, 2:00, etc.)
 cron.schedule('0 * * * *', async () => {
   try {
     await batchLearningService.runBatchTraining();
   } catch (error) {
-    console.error("[CRON] ❌ Error during batch training:", error);
+    console.error("[CRON] Error during batch training:", error);
   }
+}, {
+  scheduled: true,
+  timezone: "Asia/Kolkata"
 });
 
 const server = app.listen(PORT, () => {
@@ -24,8 +25,7 @@ const server = app.listen(PORT, () => {
 });
 
 process.on('unhandledRejection', (err, promise) => {
-    console.log(`Error: ${err.message}`);
-    server.close(() => process.exit(1));
+    console.error(`⚠️ Unhandled Promise Rejection: ${err.message}`);
 });
 
 module.exports = server;

@@ -242,11 +242,44 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
   const [coordsTooltip, setCoordsTooltip] = useState<{ lat: number, lng: number } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
-  const handleCopyCoords = useCallback((coords: { lat: number, lng: number }) => {
+  const handleCopyCoords = useCallback((e: React.MouseEvent, coords: { lat: number, lng: number }) => {
+    e.stopPropagation(); // CRITICAL: Stop propagation to prevent map-click from closing the tooltip
     const text = `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`;
-    navigator.clipboard.writeText(text);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    
+    // 1. Try modern Clipboard API (Requires HTTPS/Secure Context)
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          setIsCopied(true);
+          setTimeout(() => setIsCopied(false), 2000);
+        })
+        .catch(err => {
+          console.error('[Copy Error] Clipboard API failed:', err);
+        });
+      return;
+    }
+
+    // 2. Fallback for non-secure/legacy environments (create invisible textarea)
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      }
+    } catch (err) {
+      console.error('[Copy Error] Fallback copy failed:', err);
+    }
   }, []);
 
   // ── Navigation camera state ──────────────────────────────────────────────
@@ -778,7 +811,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
                     </div>
                     <div className="flex items-center gap-2">
                       <button 
-                        onClick={() => handleCopyCoords(coordsTooltip)}
+                        onClick={(e) => handleCopyCoords(e, coordsTooltip)}
                         className={clsx(
                           "flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all duration-200 border",
                           isCopied 
@@ -793,7 +826,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
                         </span>
                       </button>
                       <button 
-                        onClick={() => setCoordsTooltip(null)}
+                        onClick={(e) => { e.stopPropagation(); setCoordsTooltip(null); }}
                         title="Close coordinates tooltip"
                         className="p-1.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition"
                       >
