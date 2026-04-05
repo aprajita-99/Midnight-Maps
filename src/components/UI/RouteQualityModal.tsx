@@ -72,7 +72,7 @@ export default function RouteQualityModal({
 
     setIsSubmitting(true);
     try {
-      const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+      const baseURL = import.meta.env.VITE_API_BASE_URL
       const response = await fetch(`${baseURL}/api/segments/rate-route`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

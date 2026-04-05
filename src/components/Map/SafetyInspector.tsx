@@ -44,7 +44,7 @@ export default function SafetyInspector({ isActive }: SafetyInspectorProps) {
         setSubmittedRating(0);
         setIsRatingComplete(false);
         try {
-            const res = await fetch(`/api/segments/nearest?lat=${lat}&lng=${lng}`);
+            const res = await fetch(`https://midnight-maps.onrender.com/api/segments/nearest?lat=${lat}&lng=${lng}`);
             const json = await res.json();
             if (json.success) setData(json.data);
             else setData(null);
