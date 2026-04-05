@@ -59,8 +59,12 @@ Existing navigation apps (Google Maps, Apple Maps) optimize **purely for speed**
 
 ### 🛡️ AI Safety Route Ranking
 
-Three routes are compared simultaneously and ranked as **Safest**, **Balanced**, or **Fastest** — each backed by live safety score computation across every road segment.
+
 <img width="537" height="858" alt="image" src="https://github.com/user-attachments/assets/cbebe8c5-1384-43f6-a4d2-460a89e04cce" />
+
+
+Three routes are compared simultaneously and ranked as **Safest**, **Balanced**, or **Fastest** — each backed by live safety score computation across every road segment.
+
 
 
 
@@ -132,6 +136,9 @@ The panel computes its own **local safety score** client-side using the same for
 
 To help users build trust in the AI's safety routing, the application provides rich, interactive map overlays. Instead of just taking the algorithm's word for it, users can directly visualize the infrastructure data that powers their safety scores mapped along their path in real-time.
 
+hese overlays turn a "black box" safety score into a transparent, explainable decision. If a route shows a low safety score, a user can toggle the **Street Lamps** layer to instantly spot a long, unlit stretch of road. Conversely, toggling the **Cameras** layer might reveal a well-monitored surveillance corridor that explains why an alternate route was marked as safe despite lower foot traffic. This visual validation is crucial when navigating unfamiliar areas at night.
+
+
 | Overlay | Toggle | Data Source |
 |---------|--------|-------------|
 | 📷 CCTV Cameras | `CameraToggle` | `koramangala_cameras.json` |
@@ -142,15 +149,16 @@ To help users build trust in the AI's safety routing, the application provides r
 | 🌙 Night Mode | `TimeModeToggle` | Dark map style override |
 
 <br clear="left"/>
----
+
 
 ### 🧭 Navigation Simulation
 
 **Note on Simulation:** This feature was built specifically for the hackathon environment. Because I cannot practically field-test routing over roads at night, so I built this simulation engine. It allows users and judges to experience the full navigation flow, UI transformations, and post-trip Reinforcement Learning feedback loop directly from their browser.
 
+
 <img width="1919" height="1079" alt="Screenshot 2026-04-06 015559" src="https://github.com/user-attachments/assets/96a4355d-a9dc-4c22-8aca-0088c2530d99" />
 
-**Note on Simulation:** This feature was built specifically for the hackathon environment. Because I cannot practically field-test routing over roads at night, so I built this simulation engine. It allows users and judges to experience the full navigation flow, UI transformations, and post-trip Reinforcement Learning feedback loop directly from their browser.
+
 
 
 A full route simulation engine drives a marker along the selected route at configurable speed (default 12 m/s ≈ 43 km/h). During simulation:
