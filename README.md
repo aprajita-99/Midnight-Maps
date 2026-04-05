@@ -110,7 +110,7 @@ Toggle the **street lighting layer** showing amber dot markers at every recorded
 
 ### 📊 Route Intelligence Panel
 
-<img width="543" height="635" alt="Screenshot 2026-04-05 215125" src="https://github.com/user-attachments/assets/91ba9db5-b745-4f3d-8ef8-4909e4ab00dd" />
+<img width="506" height="510" alt="image" src="https://github.com/user-attachments/assets/1048efbf-0f45-41d7-a381-434f97fce5cf" />
 
 
 After route analysis, a collapsible **Route Intelligence** panel shows:
