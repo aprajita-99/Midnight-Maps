@@ -201,7 +201,7 @@ function App() {
           <div className="mt-auto px-6 py-4 flex-shrink-0"
             style={{ borderTop: '1px solid rgba(255,255,255,0.055)' }}>
             <p className="text-[10px] text-gray-500 leading-normal text-center italic font-medium opacity-80 uppercase tracking-widest leading-relaxed">
-              Some options are for demonstration purpose only for hackathon and won't be present in actual product
+              Some parts are for demonstration purpose only for hackathon and won't be present in actual product
             </p>
           </div>
         </aside>
