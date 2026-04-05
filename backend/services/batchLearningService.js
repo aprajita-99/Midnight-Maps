@@ -13,27 +13,14 @@ const RETRAINING_THRESHOLD = 0.3; // Immediate retrain if error > 0.3
  */
 const ensureDataIntegrity = async () => {
   try {
-    // 1. Check for non-numeric 'rating_count' (sometimes initialized as [] or null)
-    const corruptedRatingCount = await ScoredSegment.updateMany(
-      { rating_count: { $not: { $type: "number" } } },
-      { $set: { rating_count: 0 } }
-    );
+    // Delete any segment where rating_count is an array
+    const deletedBrokenData = await ScoredSegment.collection.deleteMany({
+      rating_count: { $type: "array" } 
+    });
 
-    if (corruptedRatingCount.modifiedCount > 0) {
-      console.log(`[DATA-FIX] 🛠️ Repaired ${corruptedRatingCount.modifiedCount} segments with non-numeric 'rating_count'.`);
-    }
-
-    // 2. Check for non-numeric 'rl_modifier'
-    const corruptedRLModifier = await ScoredSegment.updateMany(
-      { rl_modifier: { $not: { $type: "number" } } },
-      { $set: { rl_modifier: 0 } }
-    );
-
-    if (corruptedRLModifier.modifiedCount > 0) {
-      console.log(`[DATA-FIX] 🛠️ Repaired ${corruptedRLModifier.modifiedCount} segments with non-numeric 'rl_modifier'.`);
-    }
+    console.log(`[DATA-FIX] 🗑️ Deleted ${deletedBrokenData.deletedCount} corrupted segments.`);
   } catch (err) {
-    console.error("[DATA-FIX] ❌ Error during integrity check:", err);
+    console.error("[DATA-FIX] ❌ Error:", err);
   }
 };
 

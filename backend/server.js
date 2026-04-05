@@ -1,10 +1,10 @@
 const dotenv = require('dotenv');
+dotenv.config();
 const connectDB = require('./config/db');
 const app = require('./app');
 const cron = require('node-cron');
 const batchLearningService = require('./services/batchLearningService');
 
-dotenv.config();
 connectDB();
 
 const PORT = process.env.PORT || 5000;
