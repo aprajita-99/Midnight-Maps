@@ -1,4 +1,4 @@
-<div align="center">
+<img width="1340" height="1032" alt="Screenshot 2026-04-06 015908" src="https://github.com/user-attachments/assets/0faf05cd-a23d-4ec6-9d5e-9ed0f1762476" /><img width="1357" height="920" alt="Screenshot 2026-04-06 015802" src="https://github.com/user-attachments/assets/99cbdcdf-9d10-4c7c-b107-a0107f3b7836" /><img width="1340" height="1032" alt="Screenshot 2026-04-06 015908" src="https://github.com/user-attachments/assets/5019d0c4-bd25-4bd8-8d3d-28d2681dfc72" /><div align="center">
 
 # 🌙 Midnight Maps
 ### *Midnight Maps — AI-Powered Safety Navigation for the Night*
@@ -175,13 +175,13 @@ The **Safety Inspector** mode lets users inspect any segment on the map and see 
 
 <img width="1351" height="912" alt="Screenshot 2026-04-05 222937" src="https://github.com/user-attachments/assets/d2a93031-a41d-45b0-b2a9-382c217fc186" />
 
-![Uploading Screenshot 2026-04-05 222646.png…]()
 
-![Uploading Screenshot 2026-04-05 222802.png…]()
+<img width="1355" height="920" alt="Screenshot 2026-04-05 222646" src="https://github.com/user-attachments/assets/ccd423a7-0c87-4fbf-ac67-71fd12174c6f" />
 
-![Uploading Screenshot 2026-04-05 222117.png…]()
 
-![Uploading Screenshot 2026-04-06 015802.png…]()
+<img width="1357" height="920" alt="Screenshot 2026-04-06 015802" src="https://github.com/user-attachments/assets/69122880-56ff-4c99-8b7e-a66e8108b9f5" />
+
+
 
 A **Pegman control** lets users drop into Street View panorama at any location to visually validate the AI's safety assessment before committing to a route.
 
@@ -190,7 +190,7 @@ A **Pegman control** lets users drop into Street View panorama at any location t
 ### ⭐ Community Feedback Loop
 
 
-![Uploading Screenshot 2026-04-06 015908.png…]()
+<img width="1340" height="1032" alt="Screenshot 2026-04-06 015908" src="https://github.com/user-attachments/assets/20d4ee63-df73-4e08-a64c-bf7acc09b3ce" />
 
 
 After every trip, a **Segment Rating Panel** chunks the route into 3–5 geographic parts and asks the user to rate safety on each. This feedback is logged to **FeedbackLog** and processed by the RL agent.
