@@ -3,7 +3,6 @@ import { useJsApiLoader } from '@react-google-maps/api';
 import MapView from './components/Map/MapView';
 import SearchBar from './components/UI/SearchBar';
 import BottomPanel from './components/UI/BottomPanel';
-import ActionButtons from './components/UI/ActionButtons';
 import MapTypeToggle from './components/UI/MapTypeToggle';
 import LocationControl from './components/UI/LocationControl';
 import PegmanControl from './components/UI/PegmanControl';
@@ -17,7 +16,7 @@ import { useUserLocation } from './hooks/useUserLocation';
 import { useStreetView } from './hooks/useStreetView';
 import { useNavigation } from './hooks/useNavigationController';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Shield } from 'lucide-react';
 import TripSummaryModal from './components/UI/TripSummaryModal';
 
 const DUMMY_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -32,6 +31,7 @@ function App() {
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSafetyInspectorActive, setIsSafetyInspectorActive] = useState(false);
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const locationHook = useUserLocation();
@@ -102,6 +102,7 @@ function App() {
           isLocationEnabled={isLocationEnabled}
           mapRef={mapRef}
           navState={nav}
+          safetyInspectorActive={isSafetyInspectorActive}
         />
         {svStatus !== 'open' && (
           <div className="absolute top-6 right-6 z-20 flex flex-col gap-2 items-end">
@@ -120,7 +121,58 @@ function App() {
                 onDropCoords={handlePegmanDrop}
               />
             )}
-            {!isNavigating && <ActionButtons />}
+            {/* Safety Inspector icon button */}
+            {!isNavigating && (
+              <div className="relative group">
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.07 }}
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => setIsSafetyInspectorActive(v => !v)}
+                  aria-label={isSafetyInspectorActive ? 'Close Safety Inspector' : 'Open Safety Inspector'}
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl border shadow-lg backdrop-blur-xl overflow-hidden relative transition-all duration-300"
+                  style={{
+                    background: isSafetyInspectorActive
+                      ? 'rgba(34,197,94,0.18)'
+                      : 'rgba(15,23,42,0.82)',
+                    borderColor: isSafetyInspectorActive
+                      ? 'rgba(34,197,94,0.45)'
+                      : 'rgba(255,255,255,0.1)',
+                    boxShadow: isSafetyInspectorActive
+                      ? '0 0 0 1px rgba(34,197,94,0.3), 0 0 18px rgba(34,197,94,0.18), 0 4px 16px rgba(0,0,0,0.4)'
+                      : '0 4px 16px rgba(0,0,0,0.35)',
+                  }}
+                >
+                  {/* Top shimmer */}
+                  <div className="absolute top-0 left-2 right-2 h-px pointer-events-none"
+                    style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent)' }} />
+                  <Shield
+                    size={20}
+                    style={{ color: isSafetyInspectorActive ? '#4ade80' : '#9CA3AF' }}
+                    className="transition-colors duration-300"
+                  />
+                </motion.button>
+                {/* Tooltip */}
+                <div className="absolute right-0 top-[calc(100%+8px)] pointer-events-none opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 z-50">
+                  <div className="relative rounded-xl px-3 py-2 whitespace-nowrap"
+                    style={{
+                      background: 'rgba(10,14,26,0.95)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+                      backdropFilter: 'blur(16px)',
+                    }}>
+                    <div className="absolute top-0 left-3 right-3 h-px rounded-full"
+                      style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)' }} />
+                    <p className="text-[11px] font-medium text-gray-300">
+                      {isSafetyInspectorActive ? 'Close Safety Inspector' : 'Street Safety Inspector'}
+                    </p>
+                  </div>
+                  <div className="absolute -top-[5px] right-4 w-2.5 h-2.5 rotate-45"
+                    style={{ background: 'rgba(10,14,26,0.95)', borderTop: '1px solid rgba(255,255,255,0.1)', borderLeft: '1px solid rgba(255,255,255,0.1)' }} />
+                </div>
+              </div>
+            )}
           </div>
         )}
         {/* Street View overlay */}

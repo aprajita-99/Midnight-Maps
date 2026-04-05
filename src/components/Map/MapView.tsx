@@ -20,6 +20,7 @@ interface MapViewProps {
   isLocationEnabled?: boolean;
   mapRef?: React.MutableRefObject<google.maps.Map | null>;
   navState?: Pick<NavState, 'isNavigating' | 'currentLat' | 'currentLng' | 'currentStepIndex' | 'steps' | 'heading' | 'navDirectionsResult' | 'progressDistanceMeters'>;
+  safetyInspectorActive?: boolean;
 }
 
 const containerStyle = { width: '100vw', height: '100vh' };
@@ -203,7 +204,7 @@ function isNearbyAlertPlace(place: NearbyAlertPlace | null): place is NearbyAler
   return place !== null;
 }
 
-export default function MapView({ userLocation, isLocationEnabled, mapRef: externalMapRef, navState }: MapViewProps) {
+export default function MapView({ userLocation, isLocationEnabled, mapRef: externalMapRef, navState, safetyInspectorActive = false }: MapViewProps) {
   const store = useNavigationStore();
   
   // Grab the toggle states from our Zustand store
@@ -857,8 +858,12 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
           }}
         />
 
-        {/* Add the Safety Inspector so it only mounts when NOT navigating */}
-        {!isNav && <SafetyInspector />}
+        {/* Safety Inspector — only mounts when NOT navigating */}
+        {!isNav && (
+          <SafetyInspector
+            isActive={safetyInspectorActive}
+          />
+        )}
 
         {/* Navigation arrow at user's GPS position */}
         {isNav && (smoothedNavPosition || (navState.currentLat !== null && navState.currentLng !== null)) && (
