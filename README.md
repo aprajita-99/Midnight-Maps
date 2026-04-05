@@ -130,6 +130,8 @@ The panel computes its own **local safety score** client-side using the same for
 
 <img align="left" width="142" alt="Screenshot 2026-04-06 015451" src="https://github.com/user-attachments/assets/172456a7-df83-4561-b16b-d2281b7990ee" />
 
+To help users build trust in the AI's safety routing, the application provides rich, interactive map overlays. Instead of just taking the algorithm's word for it, users can directly visualize the infrastructure data that powers their safety scores mapped along their path in real-time.
+
 | Overlay | Toggle | Data Source |
 |---------|--------|-------------|
 | 📷 CCTV Cameras | `CameraToggle` | `koramangala_cameras.json` |
@@ -144,9 +146,11 @@ The panel computes its own **local safety score** client-side using the same for
 
 ### 🧭 Navigation Simulation
 
+**Note on Simulation:** This feature was built specifically for the hackathon environment. Because I cannot practically field-test routing over roads at night, so I built this simulation engine. It allows users and judges to experience the full navigation flow, UI transformations, and post-trip Reinforcement Learning feedback loop directly from their browser.
+
 <img width="1919" height="1079" alt="Screenshot 2026-04-06 015559" src="https://github.com/user-attachments/assets/96a4355d-a9dc-4c22-8aca-0088c2530d99" />
 
-**Note on Simulation:** This feature was built specifically for the hackathon environment. Because we cannot safely or practically field-test routing over dangerous roads at night, so I built this simulation engine. It allows users and judges to experience the full navigation flow, UI transformations, and post-trip Reinforcement Learning feedback loop directly from their browser.
+**Note on Simulation:** This feature was built specifically for the hackathon environment. Because I cannot practically field-test routing over roads at night, so I built this simulation engine. It allows users and judges to experience the full navigation flow, UI transformations, and post-trip Reinforcement Learning feedback loop directly from their browser.
 
 
 A full route simulation engine drives a marker along the selected route at configurable speed (default 12 m/s ≈ 43 km/h). During simulation:
