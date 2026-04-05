@@ -60,7 +60,7 @@ Existing navigation apps (Google Maps, Apple Maps) optimize **purely for speed**
 ### 🛡️ AI Safety Route Ranking
 
 Three routes are compared simultaneously and ranked as **Safest**, **Balanced**, or **Fastest** — each backed by live safety score computation across every road segment.
-![feature_route_cards_1775417842858](https://github.com/user-attachments/assets/0a8e3980-4fa0-4bfb-a13c-eb0ca81fab92)
+<img width="537" height="858" alt="image" src="https://github.com/user-attachments/assets/cbebe8c5-1384-43f6-a4d2-460a89e04cce" />
 
 
 
