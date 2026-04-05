@@ -24,7 +24,8 @@ export default function TripSummaryModal({ nav }: TripSummaryModalProps) {
     submitRouteChunkFeedback,
     routeAnalysis,
     selectedRouteIndex,
-    setDirectionsResult
+    setDirectionsResult,
+    isDemoNightMode,
   } = useNavigationStore();
 
   const [selectedSafestChunkId, setSelectedSafestChunkId] = useState<string | null>(null);
@@ -34,6 +35,26 @@ export default function TripSummaryModal({ nav }: TripSummaryModalProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const analysis = routeAnalysis?.[selectedRouteIndex] ?? null;
+
+  // Same scoring formula as RouteInsightsPanel
+  const safetyScore = useMemo(() => {
+    if (!analysis) return null;
+    const features = analysis.features || { lighting: 0, camera: 0, activity: 0, environment: 0 };
+    const NIGHT_W = { LIGHTING: 0.40, ACTIVITY: 0.25, ENVIRONMENT: 0.20, CAMERA: 0.15 };
+    const DAY_W   = { LIGHTING: 0.50, ACTIVITY: 0.10, ENVIRONMENT: 0.30, CAMERA: 0.10 };
+    const hour = new Date().getHours();
+    const slot = isDemoNightMode ? 0 : Math.floor(hour / 2);
+    const isDay = !isDemoNightMode && hour >= 6 && hour < 18;
+    const finalLighting = isDay ? 1.0 : features.lighting;
+    const finalCamera   = Math.min(1.0, features.camera * 1.35);
+    const W = isDay ? DAY_W : NIGHT_W;
+    let base = (finalLighting * W.LIGHTING) + (features.activity * W.ACTIVITY) +
+               (features.environment * W.ENVIRONMENT) + (finalCamera * W.CAMERA);
+    if (finalLighting < 0.3 && features.activity < 0.3) base *= 0.70;
+    else if (finalLighting < 0.3) base *= 0.85;
+    if ((slot === 0 || slot === 1) && base > 0.90) base = 0.90;
+    return Math.round(Math.min(0.98, Math.max(0.05, 0.35 + base * 0.65)) * 100);
+  }, [analysis, isDemoNightMode]);
   
   const feedbackChunks = useMemo(() => {
     const rawChunks = analysis?.feedbackChunks?.filter((chunk) => chunk.segmentIds.length > 0) ?? [];
@@ -169,10 +190,10 @@ export default function TripSummaryModal({ nav }: TripSummaryModalProps) {
               <p className="text-sm text-gray-400 mt-1">
                 Mark the safest part and the part that felt least safe.
               </p>
-              {analysis && (
+              {safetyScore !== null && (
                 <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs uppercase tracking-widest font-bold text-gray-300">
                   <Star size={12} className="text-primary-green" />
-                  Overall Safety {Math.round(analysis.meanSafety * 100)}%
+                  Safety Score {safetyScore}%
                 </div>
               )}
             </div>

@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Navigation, ArrowLeft, ArrowRight, ArrowUp,
-  RotateCcw, AlertTriangle, Clock, Milestone,
+  RotateCcw, AlertTriangle, Clock, Milestone, Pause, Play,
 } from 'lucide-react';
 import type { UseNavigationReturn } from '../../hooks/useNavigationController';
 import { stripHtml } from '../../utils/routePath';
@@ -28,10 +28,10 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
   const {
     isNavigating, steps, currentStepIndex,
     distanceToNext, remainingDuration, remainingDistance,
-    isOffRoute,
+    isOffRoute, pauseNavigation, resumeNavigation,
   } = nav;
 
-  const { setShowTripSummary, showTripSummary } = useNavigationStore();
+  const { setShowTripSummary, showTripSummary, isSimulationPaused } = useNavigationStore();
 
   if (!isNavigating || showTripSummary) return null;
 
@@ -129,6 +129,26 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
             <Navigation size={12} className="text-primary-green" />
             Step {Math.min(primaryStepIndex + 1, steps.length)} of {steps.length}
           </div>
+
+          {/* Pause / Resume */}
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => isSimulationPaused ? resumeNavigation() : pauseNavigation()}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white text-sm font-bold shadow-lg transition-colors"
+            style={{
+              background: isSimulationPaused
+                ? 'rgba(34,197,94,0.85)'
+                : 'rgba(255,255,255,0.12)',
+              border: isSimulationPaused
+                ? '1px solid rgba(34,197,94,0.6)'
+                : '1px solid rgba(255,255,255,0.15)',
+            }}
+          >
+            {isSimulationPaused
+              ? <><Play size={15} strokeWidth={2.5} /> Resume</>
+              : <><Pause size={15} strokeWidth={2.5} /> Pause</>}
+          </motion.button>
 
           <motion.button
             whileHover={{ scale: 1.04 }}

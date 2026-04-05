@@ -3,6 +3,28 @@ import { motion } from 'framer-motion';
 import { Shield, Clock, Navigation } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
 
+// Mirrors the safety score formula used in RouteInsightsPanel
+function calcSafetyScore(analysis: { meanSafety: number; features?: { lighting: number; camera: number; activity: number; environment: number } }, isDemoNightMode: boolean): number {
+  const features = analysis.features || { lighting: 0, camera: 0, activity: 0, environment: 0 };
+  const NIGHT_WEIGHTS = { LIGHTING: 0.40, ACTIVITY: 0.25, ENVIRONMENT: 0.20, CAMERA: 0.15 };
+  const DAY_WEIGHTS   = { LIGHTING: 0.50, ACTIVITY: 0.10, ENVIRONMENT: 0.30, CAMERA: 0.10 };
+  const currentHour = new Date().getHours();
+  const timeSlot = isDemoNightMode ? 0 : Math.floor(currentHour / 2);
+  const isDaytime = !isDemoNightMode && (currentHour >= 6 && currentHour < 18);
+  const finalLighting = isDaytime ? 1.0 : features.lighting;
+  const finalCamera   = Math.min(1.0, features.camera * 1.35);
+  const activeWeights = isDaytime ? DAY_WEIGHTS : NIGHT_WEIGHTS;
+  let base = (finalLighting * activeWeights.LIGHTING) +
+             (features.activity * activeWeights.ACTIVITY) +
+             (features.environment * activeWeights.ENVIRONMENT) +
+             (finalCamera * activeWeights.CAMERA);
+  if (finalLighting < 0.3 && features.activity < 0.3) base *= 0.70;
+  else if (finalLighting < 0.3) base *= 0.85;
+  if ((timeSlot === 0 || timeSlot === 1) && base > 0.90) base = 0.90;
+  const finalSafety = Math.min(0.98, Math.max(0.05, 0.35 + base * 0.65));
+  return Math.round(finalSafety * 100);
+}
+
 interface RouteCardProps {
   route: google.maps.DirectionsRoute;
   index: number;
@@ -11,7 +33,7 @@ interface RouteCardProps {
 }
 
 export default function RouteCard({ route, index, isSelected, onClick }: RouteCardProps) {
-  const { routeAnalysis, shortestRouteIndex, safestRouteIndex, balancedRouteIndex } = useNavigationStore();
+  const { routeAnalysis, shortestRouteIndex, safestRouteIndex, balancedRouteIndex, isDemoNightMode } = useNavigationStore();
 
   const leg = route.legs[0];
   if (!leg) return null;
@@ -74,7 +96,7 @@ export default function RouteCard({ route, index, isSelected, onClick }: RouteCa
             <div className="flex items-center gap-1 mt-1">
               <Shield size={12} className="text-primary-green" />
               <span className="text-[10px] font-bold text-primary-green uppercase tracking-tighter">
-                {Math.round(analysis.meanSafety * 100)}% Safe
+                {calcSafetyScore(analysis, isDemoNightMode)}% Safe
               </span>
             </div>
           )}

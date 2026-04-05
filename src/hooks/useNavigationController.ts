@@ -46,6 +46,8 @@ export interface NavState {
 export interface UseNavigationReturn extends NavState {
   startNavigation: (mapRef: React.RefObject<google.maps.Map | null>) => void;
   stopNavigation: () => void;
+  pauseNavigation: () => void;
+  resumeNavigation: () => void;
 }
 
 function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -315,7 +317,7 @@ export function useNavigation(): UseNavigationReturn {
     }
 
     simulatorRef.current = null;
-    useNavigationStore.setState({ isSimulationRunning: false });
+    useNavigationStore.setState({ isSimulationRunning: false, isSimulationPaused: false });
   }, []);
 
   const finishNavigation = useCallback(() => {
@@ -325,6 +327,11 @@ export function useNavigation(): UseNavigationReturn {
     }
 
     clearSimulation();
+
+    // Exit fullscreen when navigation ends
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
     
     // Partially reset local state to unmount Nav UI from map
     setState(previous => ({
@@ -341,6 +348,11 @@ export function useNavigation(): UseNavigationReturn {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
+    }
+
+    // Exit fullscreen when stopping
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
     }
 
     clearSimulation();
@@ -560,6 +572,14 @@ export function useNavigation(): UseNavigationReturn {
     (mapRef: React.RefObject<google.maps.Map | null>) => {
       mapRefInternal.current = mapRef.current;
 
+      // Enter fullscreen when simulation begins
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {/* ignore if denied */});
+      } else if ((el as any).webkitRequestFullscreen) {
+        (el as any).webkitRequestFullscreen();
+      }
+
       const {
         endLocation,
         travelMode,
@@ -602,7 +622,55 @@ export function useNavigation(): UseNavigationReturn {
     [applyNavResult, finishNavigation, processPositionUpdate, startSimulation]
   );
 
+  // ── Pause / Resume ─────────────────────────────────────────────────────
+  const pauseNavigation = useCallback(() => {
+    if (simulatorTimerRef.current !== null) {
+      window.clearInterval(simulatorTimerRef.current);
+      simulatorTimerRef.current = null;
+    }
+    useNavigationStore.setState({ isSimulationPaused: true });
+    // Exit fullscreen so sidebar shows
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
+  const resumeNavigation = useCallback(() => {
+    const simulator = simulatorRef.current;
+    if (!simulator) return;
+    useNavigationStore.setState({ isSimulationPaused: false });
+    // Re-enter fullscreen
+    const el = document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    } else if ((el as any).webkitRequestFullscreen) {
+      (el as any).webkitRequestFullscreen();
+    }
+    lastSimulatorUpdateRef.current = Date.now();
+    simulatorTimerRef.current = window.setInterval(() => {
+      const sim = simulatorRef.current;
+      if (!sim) return;
+      const now = Date.now();
+      const deltaMs = now - lastSimulatorUpdateRef.current;
+      lastSimulatorUpdateRef.current = now;
+      const simulatedPosition = sim.getNextPosition(deltaMs);
+      if (!simulatedPosition) {
+        finishNavigation();
+        return;
+      }
+      processPositionUpdate(
+        simulatedPosition.latitude,
+        simulatedPosition.longitude,
+        simulatedPosition.heading ?? 0,
+        sim.getDistanceCoveredMeters()
+      );
+      if (sim.isComplete()) {
+        finishNavigation();
+      }
+    }, SIMULATION_TICK_MS);
+  }, [finishNavigation, processPositionUpdate]);
+
   useEffect(() => () => stopNavigation(), [stopNavigation]);
 
-  return { ...state, startNavigation, stopNavigation };
+  return { ...state, startNavigation, stopNavigation, pauseNavigation, resumeNavigation };
 }

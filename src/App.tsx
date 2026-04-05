@@ -51,8 +51,11 @@ function App() {
   const { isNavigating } = nav;
 
   // Store values for the sticky simulate button
-  const { directionsResult, startLocation, endLocation, isLoading: routeLoading, isInitialLoading, finishInitialLoading } = useNavigationStore();
+  const { directionsResult, startLocation, endLocation, isLoading: routeLoading, isInitialLoading, finishInitialLoading, isSimulationPaused } = useNavigationStore();
   const isRouteReady = startLocation !== null && endLocation !== null && !!directionsResult && !routeLoading;
+
+  // Sidebar visible when NOT navigating, OR when paused mid-navigation
+  const showSidebar = !isNavigating || isSimulationPaused;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,8 +96,14 @@ function App() {
       {/* ── Main body ──────────────────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
-        {/* ── Left Sidebar ─────────────────────────────────────────────────── */}
-        <aside className="w-[380px] flex-shrink-0 flex flex-col border-r shadow-2xl relative z-30"
+      {/* ── Left Sidebar ─────────────────────────────────────────────────── */}
+        <motion.aside
+          animate={{
+            width: showSidebar ? 380 : 0,
+            opacity: showSidebar ? 1 : 0,
+          }}
+          transition={{ type: 'spring', stiffness: 320, damping: 38 }}
+          className="flex-shrink-0 flex flex-col border-r shadow-2xl relative z-30 overflow-hidden"
           style={{
             background: 'rgba(10,14,26,0.97)',
             borderColor: 'rgba(255,255,255,0.06)',
@@ -188,7 +197,7 @@ function App() {
                 </motion.button>
               </motion.div>
             )}
-            {isNavigating && (
+            {isNavigating && isSimulationPaused && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -196,10 +205,10 @@ function App() {
                 className="flex-shrink-0 p-4"
                 style={{ borderTop: '1px solid rgba(255,255,255,0.055)' }}
               >
-                <div className="w-full py-3 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 text-primary-green"
-                  style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                <div className="w-full py-3 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 text-yellow-400"
+                  style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
                   <Navigation size={13} fill="currentColor" />
-                  Navigation Active
+                  Simulation Paused
                 </div>
               </motion.div>
             )}
@@ -212,7 +221,7 @@ function App() {
               Some parts are for demonstration purpose only for hackathon and won't be present in actual product
             </p>
           </div>
-        </aside>
+        </motion.aside>
 
         {/* Readme Sidebar Overlay */}
         <AnimatePresence>
@@ -220,10 +229,16 @@ function App() {
         </AnimatePresence>
 
         {/* ── Map Frame ──────────────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0 min-h-0 p-6">
+        <motion.div
+          animate={{ padding: isNavigating && !isSimulationPaused ? 0 : 24 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 38 }}
+          className="flex-1 min-w-0 min-h-0"
+        >
           <div className="relative w-full h-full rounded-2xl overflow-hidden"
             style={{
-              boxShadow: '0 0 0 2px #0a0e1a, 0 0 0 4px white, 0 20px 60px rgba(0,0,0,0.5)',
+              boxShadow: isNavigating && !isSimulationPaused
+                ? 'none'
+                : '0 0 0 2px #0a0e1a, 0 0 0 4px white, 0 20px 60px rgba(0,0,0,0.5)',
             }}
           >
             {/* Map fills the frame */}
@@ -319,7 +334,7 @@ function App() {
             <TripSummaryModal nav={nav} />
             <NavigationHUD nav={nav} />
           </div>
-        </div>
+        </motion.div>
       </div>
       <AnimatePresence>
         {isInitialLoading && <LoadingScreen />}

@@ -97,8 +97,10 @@ interface NavigationState {
   setShowNearbyAlerts: (show: boolean) => void;
 
   // Simulation controls
+  isSimulationPaused: boolean;
   setIsSimulationMode: (sim: boolean) => void;
   setIsSimulationRunning: (running: boolean) => void;
+  setIsSimulationPaused: (paused: boolean) => void;
   setSimulationSpeed: (speed: number) => void;
 
   setIsLoading: (loading: boolean) => void;
@@ -131,6 +133,7 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
   // Navigation modes
   isSimulationMode: true,
   isSimulationRunning: false,
+  isSimulationPaused: false,
   simulationSpeed: 12, // 12 m/s default (~43 km/h)
 
   // Demo features
@@ -214,7 +217,7 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
   submitRouteChunkFeedback: async ({ chunks, safestChunkId, unsafeChunkId }) => {
     try {
       const localTimeSlot = getTimeSlot(get().isDemoNightMode);
-      const response = await fetch('https://midnight-maps.onrender.com/api/segments/rate-route-chunks', {
+      const response = await fetch('/api/segments/rate-route-chunks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -257,6 +260,7 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
   setShowNearbyAlerts: (show) => set({ showNearbyAlerts: show }),
   setIsSimulationMode: (sim) => set({ isSimulationMode: sim }),
   setIsSimulationRunning: (running) => set({ isSimulationRunning: running }),
+  setIsSimulationPaused: (paused) => set({ isSimulationPaused: paused }),
   setSimulationSpeed: (speed) => set({ simulationSpeed: Math.max(1, Math.min(100, speed)) }),
 
   setIsLoading: (loading) => set({ isLoading: loading }),

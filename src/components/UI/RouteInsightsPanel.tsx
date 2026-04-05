@@ -99,7 +99,6 @@ export default function RouteInsightsPanel() {
   const finalSafetyValue = Math.min(0.98, Math.max(0.05, (0.35 + (baseScore * 0.65))));
   
   const safetyScore = Math.round(finalSafetyValue * 100);
-  const riskScore = 100 - safetyScore;
   // --- NEW LOGIC END ---
 
   const renderProgressBar = (label: string, icon: ReactNode, value: number) => {
@@ -144,20 +143,12 @@ export default function RouteInsightsPanel() {
         </h3>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-primary-green/20 bg-primary-green/10 px-4 py-3">
+      <div className="w-full rounded-2xl border border-primary-green/20 bg-primary-green/10 px-4 py-3">
           <div className="text-[10px] text-primary-green font-bold uppercase tracking-widest">
             Safety Score
           </div>
           <div className="text-2xl font-black text-white mt-1">{safetyScore}%</div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-            Risk Exposure
-          </div>
-          <div className="text-2xl font-black text-white mt-1">{riskScore}%</div>
-        </div>
-      </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         {renderProgressBar('Lighting', <Lightbulb size={12} />, finalLighting)}
