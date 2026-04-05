@@ -1,12 +1,11 @@
 import { GoogleMap, Marker, Circle, OverlayView } from '@react-google-maps/api';
-import { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crosshair, MapPin, X, Copy, Check, Shield, Store as StoreIcon } from 'lucide-react';
 import clsx from 'clsx';
 import RoutePolylines from './RoutePolylines.tsx';
 import { useNavigationStore } from '../../store/useNavigationStore.ts';
-import { MapDarkTheme } from './MapDarkTheme.ts';
 import { useDirections } from '../../hooks/useDirections.ts';
 import type { UserLocation } from '../../hooks/useUserLocation.ts';
 import type { NavState } from '../../hooks/useNavigationController.ts';
@@ -23,7 +22,7 @@ interface MapViewProps {
   safetyInspectorActive?: boolean;
 }
 
-const containerStyle = { width: '100vw', height: '100vh' };
+const containerStyle = { width: '100%', height: '100%' };
 const center = {
   lat: 12.9352,
   lng: 77.6245
@@ -165,8 +164,9 @@ function offsetLatLngByPixels(
 }
 
 function NearbyAlertMarker({ alert }: { alert: NearbyAlertPlace }) {
-  const Icon = alert.kind === 'police' ? Shield : StoreIcon;
-  const label = alert.kind === 'police' ? 'Police' : 'Open Shop';
+  const isPolice = alert.kind === 'police';
+  const Icon = isPolice ? Shield : StoreIcon;
+  const label = isPolice ? 'Police' : 'Open Shop';
 
   return (
     <OverlayView
@@ -175,23 +175,34 @@ function NearbyAlertMarker({ alert }: { alert: NearbyAlertPlace }) {
     >
       <div
         title={`${alert.name} • ${Math.round(alert.distanceMeters)} m`}
-        className="relative -translate-x-1/2 -translate-y-full pointer-events-none"
+        className="relative -translate-x-1/2 -translate-y-[calc(100%+6px)] pointer-events-none"
       >
+        {/* Pulsing beacon behind icon — slightly smaller */}
         <motion.div
           animate={{
-            scale: [1, 1.8, 1],
-            opacity: [0.5, 0, 0.5],
+            scale: [1, 2, 1],
+            opacity: [0.35, 0, 0.35],
           }}
           transition={{
-            duration: 1.6,
+            duration: 2.0,
             repeat: Infinity,
-            ease: 'easeOut',
+            ease: 'easeInOut',
           }}
-          className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500/50"
+          className={clsx(
+            "absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full",
+            isPolice ? "bg-red-500/30" : "bg-primary-green/30"
+          )}
         />
-        <div className="relative flex items-center gap-1.5 rounded-full border border-red-300/80 bg-red-600/95 px-3 py-1.5 shadow-[0_0_25px_rgba(239,68,68,0.45)]">
-          <Icon size={12} className="text-white" />
-          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white">
+        
+        {/* The Badge — more compact padding and text */}
+        <div className={clsx(
+          "relative flex items-center gap-1.5 rounded-full border px-2.5 py-1 shadow-xl backdrop-blur-md transition-all duration-300",
+          isPolice 
+            ? "bg-red-600/85 border-red-300/40 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]" 
+            : "bg-emerald-600/85 border-emerald-300/40 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+        )}>
+          <Icon size={11} strokeWidth={3} className="text-white shrink-0" />
+          <span className="text-[9px] font-black uppercase tracking-wide whitespace-nowrap leading-none">
             {label}
           </span>
         </div>
@@ -531,7 +542,11 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
 
   // ── Directions / marker drag ──────────────────────────────────────────────
   useEffect(() => {
-    if (!showNearbyAlerts || !navState?.isNavigating || navState.currentLat == null || navState.currentLng == null) {
+    const isNavActive = !!navState?.isNavigating;
+    const currentLat = isNavActive ? navState?.currentLat : userLocation?.lat;
+    const currentLng = isNavActive ? navState?.currentLng : userLocation?.lng;
+
+    if (!showNearbyAlerts || currentLat == null || currentLng == null) {
       nearbyRequestIdRef.current += 1;
       nearbyQueryMetaRef.current = null;
       setNearbyAlerts([]);
@@ -542,10 +557,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
       return;
     }
 
-    const origin = {
-      lat: navState.currentLat,
-      lng: navState.currentLng,
-    };
+    const origin = { lat: currentLat, lng: currentLng };
     const now = Date.now();
     const previousQuery = nearbyQueryMetaRef.current;
 
@@ -604,11 +616,10 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
     });
   }, [
     mapPlaceToAlert,
-    navState?.currentLat,
-    navState?.currentLng,
-    navState?.isNavigating,
-    searchNearbyPlaces,
     showNearbyAlerts,
+    userLocation?.lat,
+    userLocation?.lng,
+    isLocationEnabled,
   ]);
 
   const { fetchDirections } = useDirections();
@@ -660,7 +671,6 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
         /* Detect user panning map — breaks camera follow */
         onDragStart={() => { if (isNav) setIsFollowing(false); setCoordsTooltip(null); }}
         options={{
-          styles: MapDarkTheme,
           disableDefaultUI: true,
           zoomControl: false,
           clickableIcons: false,
@@ -733,7 +743,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
           />
         ))}
 
-        {isNav && showNearbyAlerts && nearbyAlerts.map((alert) => (
+        {showNearbyAlerts && nearbyAlerts.map((alert) => (
           <NearbyAlertMarker key={alert.id} alert={alert} />
         ))}
 
@@ -800,14 +810,16 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
         </AnimatePresence>
 
         {/* Blue dot — only when NOT navigating */}
-        {!isNav && isLocationEnabled && userLocation && (
-          <>
+        {(!isNav && isLocationEnabled && userLocation) ? (
+          <React.Fragment key="user-location-group">
             <Circle
+              key="user-accuracy-circle"
               center={{ lat: userLocation.lat, lng: userLocation.lng }}
               radius={userLocation.accuracy ?? 30}
               options={{ fillColor: '#4285F4', fillOpacity: 0.15, strokeOpacity: 0, clickable: false }}
             />
             <Marker
+              key="user-location-marker"
               position={{ lat: userLocation.lat, lng: userLocation.lng }}
               zIndex={20}
               clickable={false}
@@ -820,8 +832,8 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
                 strokeWeight: 2.5,
               }}
             />
-          </>
-        )}
+          </React.Fragment>
+        ) : null}
 
         {/* A / B drag markers — hidden during navigation */}
         {!isNav && startLocation && (
@@ -848,10 +860,10 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
           center={center}
           radius={3000}
           options={{
-            fillColor: '#4285F4',
+            fillColor: '#92aedbff',
             fillOpacity: 0.03,
-            strokeColor: '#4285F4',
-            strokeOpacity: 0.2,
+            strokeColor: '#40011bff',
+            strokeOpacity: 0.6,
             strokeWeight: 2,
             clickable: false,
             zIndex: 1

@@ -1,5 +1,5 @@
 .segment-rating-panel-overlay {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
@@ -19,7 +19,7 @@
   padding: 32px;
   max-width: 520px;
   width: 90%;
-  max-height: 85vh;
+  max-height: 90%;
   overflow-y: auto;
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.8);

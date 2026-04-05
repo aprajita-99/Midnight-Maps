@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertTriangle, Loader2, Shield, Activity, Sun, Camera, Star } from 'lucide-react';
 import type { UseStreetViewReturn } from '../../hooks/useStreetView';
@@ -56,11 +55,6 @@ export default function StreetViewPanel({
     }
   }, []);
 
-
-
-
-
-
   // Initialize StreetViewPanorama once the container div mounts and we have a location
   useEffect(() => {
     if (svStatus !== 'open' || !svLocation || !containerRef.current) return;
@@ -82,8 +76,6 @@ export default function StreetViewPanel({
 
     panoramaRef.current = panorama;
 
-
-
     // Listen for movement in Street View
     const posListener = panorama.addListener('position_changed', () => {
       const pos = panorama.getPosition();
@@ -101,26 +93,7 @@ export default function StreetViewPanel({
   }, [svStatus, svLocation, mapRef, panoramaRef, updateHUD]);
 
   return (
-    <>
-      {/* Loading / unavailable toast — portal ensures it's above Google Maps layers */}
-      {(svStatus === 'unavailable' || svStatus === 'loading') &&
-        createPortal(
-          <div className="fixed bottom-44 right-6 z-[9999] flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#1a1a2e]/90 backdrop-blur-xl border border-white/10 shadow-2xl">
-            {svStatus === 'loading' ? (
-              <>
-                <Loader2 size={16} className="text-green-400 animate-spin flex-shrink-0" />
-                <span className="text-sm text-gray-300">Checking Street View coverage…</span>
-              </>
-            ) : (
-              <>
-                <AlertTriangle size={16} className="text-yellow-400 flex-shrink-0" />
-                <span className="text-sm text-gray-300">No Street View coverage here</span>
-              </>
-            )}
-          </div>,
-          document.body
-        )}
-
+    <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden rounded-2xl">
       {/* Street View panorama fills the map area */}
       <AnimatePresence>
         {svStatus === 'open' && (
@@ -130,33 +103,56 @@ export default function StreetViewPanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="absolute inset-0 z-40"
+            className="absolute inset-0 z-10 pointer-events-auto"
           >
             <div ref={containerRef} className="w-full h-full" />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Exit button + badge — portal at body level, guaranteed above Google's panorama stacking context */}
-      {svStatus === 'open' &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] pointer-events-none">
+      {/* ── UI Layer ──────────────────────────────────────────────────────── */}
+      <div className="absolute inset-0 z-20 pointer-events-none">
+        
+        {/* Loading / unavailable toast — now strictly inside map frame */}
+        <AnimatePresence>
+          {(svStatus === 'unavailable' || svStatus === 'loading') && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute bottom-6 right-6 flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#1a1a2e]/90 backdrop-blur-xl border border-white/10 shadow-2xl pointer-events-auto z-50"
+            >
+              {svStatus === 'loading' ? (
+                <>
+                  <Loader2 size={16} className="text-green-400 animate-spin flex-shrink-0" />
+                  <span className="text-sm text-gray-300">Checking Street View...</span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle size={16} className="text-yellow-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-300">No coverage here</span>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* HUD Elements (Badge, Exit, Safety HUD) */}
+        {svStatus === 'open' && (
+          <>
             {/* Exit button */}
             <motion.button
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
               onClick={onClose}
-              className="pointer-events-auto absolute top-6 right-6 flex items-center gap-2 px-5 py-2.5 rounded-full bg-gray-900/90 backdrop-blur-xl border border-white/20 shadow-2xl text-white text-sm font-semibold hover:bg-white hover:text-gray-900 active:scale-95 transition-all duration-200"
+              className="pointer-events-auto absolute top-6 right-6 flex items-center gap-2 px-5 py-2.5 rounded-full bg-gray-900/90 backdrop-blur-xl border border-white/20 shadow-2xl text-white text-sm font-semibold hover:bg-white hover:text-gray-900 active:scale-95 transition-all duration-200 z-50"
             >
               <X size={15} strokeWidth={2.5} />
               Exit Street View
             </motion.button>
 
-
-
             {/* Street View badge */}
-            <div className="pointer-events-none absolute top-6 left-6 px-3 py-1.5 rounded-full bg-[#4285F4] text-white text-xs font-bold tracking-widest shadow-lg uppercase">
+            <div className="absolute top-6 left-6 px-3 py-1.5 rounded-full bg-[#4285F4] text-white text-xs font-bold tracking-widest shadow-lg uppercase z-50">
               Street View
             </div>
 
@@ -164,7 +160,7 @@ export default function StreetViewPanel({
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="pointer-events-auto absolute bottom-6 left-6 w-64 p-4 rounded-2xl bg-black/75 backdrop-blur-md border border-white/10 shadow-2xl text-white"
+              className="pointer-events-auto absolute bottom-6 left-6 w-64 p-4 rounded-2xl bg-black/75 backdrop-blur-md border border-white/10 shadow-2xl text-white z-50"
               id="safety-hud"
             >
               <div className="flex items-center justify-between mb-4">
@@ -175,7 +171,7 @@ export default function StreetViewPanel({
                 {hudStatus === 'ready' && currentSegment && (
                   <motion.button
                     onClick={() => setShowRatingModal(true)}
-                    className="pointer-events-auto p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
                     title="Rate this street"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
@@ -200,7 +196,6 @@ export default function StreetViewPanel({
                   <HUDItem
                     icon={<Sun size={14} />}
                     label="Lighting"
-                    // Safely grabs the current 2-hour block, defaulting to 0 if the array is missing
                     value={(currentSegment.features.lighting?.[getCurrentTimeSlot()] ?? 0).toFixed(2)}
                     color="text-yellow-400"
                   />
@@ -225,29 +220,29 @@ export default function StreetViewPanel({
                 </div>
               )}
             </motion.div>
-          </div>,
-          document.body
+          </>
         )}
 
-      {/* Rating Modal Portal */}
-      <AnimatePresence>
-        {showRatingModal && currentSegment && createPortal(
-          <SegmentRatingPanel
-            segment={currentSegment}
-            currentScore={Math.max(0.02, Math.min(0.98, (currentSegment.scores?.[getCurrentTimeSlot()] || 0.5) + (currentSegment.rl_modifier || 0)))}
-            timeSlot={getCurrentTimeSlot()}
-            onSubmit={() => {
-              // Refresh segment data after rating
-              if (svLocation) {
-                updateHUD(svLocation.lat, svLocation.lng);
-              }
-            }}
-            onClose={() => setShowRatingModal(false)}
-          />,
-          document.body
-        )}
-      </AnimatePresence>
-    </>
+        {/* Rating Modal — now strictly inside map frame */}
+        <AnimatePresence>
+          {showRatingModal && currentSegment && (
+            <div className="absolute inset-0 z-[100] pointer-events-auto">
+              <SegmentRatingPanel
+                segment={currentSegment}
+                currentScore={Math.max(0.02, Math.min(0.98, (currentSegment.scores?.[getCurrentTimeSlot()] || 0.5) + (currentSegment.rl_modifier || 0)))}
+                timeSlot={getCurrentTimeSlot()}
+                onSubmit={() => {
+                  if (svLocation) {
+                    updateHUD(svLocation.lat, svLocation.lng);
+                  }
+                }}
+                onClose={() => setShowRatingModal(false)}
+              />
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
@@ -271,5 +266,3 @@ function HUDItem({ icon, label, value, color }: { icon: React.ReactNode, label: 
     </div>
   );
 }
-
-

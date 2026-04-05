@@ -30,7 +30,7 @@ export default function LocationSearchInput({ placeholder, icon, onLocationSelec
 
   useEffect(() => {
     if (!window.google || !window.google.maps || !window.google.maps.places) return;
-    
+
     if (!autocompleteService.current) {
       autocompleteService.current = new window.google.maps.places.AutocompleteService();
     }
@@ -144,22 +144,24 @@ export default function LocationSearchInput({ placeholder, icon, onLocationSelec
   };
 
   return (
-    <div className="relative w-full" ref={wrapperRef}>
-      <div className="flex items-center gap-3 bg-dark-800/80 rounded-xl px-3 py-2 border border-white/5 focus-within:border-primary-green/50 transition-colors">
-        {icon}
+    <div className="relative w-full group" ref={wrapperRef}>
+      <div className="flex items-center gap-3 bg-white/[0.03] backdrop-blur-xl rounded-xl px-4 py-2.5 border border-white/10 focus-within:border-primary-green/50 focus-within:bg-white/[0.06] focus-within:shadow-[0_0_20px_rgba(34,197,94,0.05)] transition-all duration-300">
+        <div className="flex-shrink-0 opacity-80 group-focus-within:opacity-100 transition-opacity">
+          {icon}
+        </div>
         <input
           type="text"
           value={inputValue}
           onChange={handleInputChange}
           onFocus={() => setIsDropdownVisible(true)}
-          className="bg-transparent text-white w-full text-sm outline-none placeholder-gray-500"
+          className="bg-transparent text-white w-full text-sm outline-none placeholder-slate-400 font-medium"
           placeholder={placeholder}
         />
         {inputValue && (
           <button
             type="button"
             onClick={handleClear}
-            className="flex-shrink-0 text-gray-500 hover:text-white transition-colors"
+            className="flex-shrink-0 text-gray-500 hover:text-white transition-colors p-1"
             tabIndex={-1}
             aria-label="Clear input"
           >

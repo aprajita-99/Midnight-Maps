@@ -12,12 +12,12 @@ interface RouteCardProps {
 
 export default function RouteCard({ route, index, isSelected, onClick }: RouteCardProps) {
   const { routeAnalysis, shortestRouteIndex, safestRouteIndex, balancedRouteIndex } = useNavigationStore();
-  
+
   const leg = route.legs[0];
   if (!leg) return null;
 
   const analysis = routeAnalysis?.[index];
-  
+
   const isShortest = index === shortestRouteIndex;
   const isSafest = index === safestRouteIndex;
   const isBalanced = index === balancedRouteIndex;
@@ -34,7 +34,7 @@ export default function RouteCard({ route, index, isSelected, onClick }: RouteCa
   const labels = getLabels();
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
@@ -43,8 +43,8 @@ export default function RouteCard({ route, index, isSelected, onClick }: RouteCa
       onClick={onClick}
       className={clsx(
         "p-5 rounded-3xl border cursor-pointer transition-all relative overflow-hidden backdrop-blur-xl",
-        isSelected 
-          ? "bg-white/5 border-primary-green ring-1 ring-primary-green/30" 
+        isSelected
+          ? "bg-white/5 border-primary-green ring-1 ring-primary-green/30"
           : "bg-dark-800/40 border-white/5 hover:border-white/20 hover:bg-dark-700/60"
       )}
     >
@@ -65,7 +65,7 @@ export default function RouteCard({ route, index, isSelected, onClick }: RouteCa
           </div>
           <span className="text-xs text-gray-400 truncate max-w-[200px] mt-1">via {route.summary}</span>
         </div>
-        
+
         <div className="flex flex-col items-end shrink-0 ml-2">
           <span className={clsx("text-xl font-black tracking-tighter", isSelected ? "text-primary-green" : "text-white")}>
             {leg.duration?.text || "ETA --"}
@@ -93,7 +93,7 @@ export default function RouteCard({ route, index, isSelected, onClick }: RouteCa
       </div>
 
       {isSelected && (
-        <motion.div 
+        <motion.div
           layoutId="active-glow"
           className="absolute -right-4 -bottom-4 w-12 h-12 bg-primary-green/20 blur-2xl rounded-full"
         />

@@ -48,7 +48,7 @@ export default function TravelModeTabs() {
   ];
 
   return (
-    <div className="flex bg-dark-800/80 backdrop-blur-md rounded-xl p-1.5 border border-white/5 mb-2 relative">
+    <div className="flex bg-white/[0.03] backdrop-blur-xl rounded-2xl p-1.5 border border-white/10 mb-2 relative shadow-inner">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = travelMode === tab.id;
@@ -58,17 +58,19 @@ export default function TravelModeTabs() {
             key={tab.id}
             onClick={() => handleModeChange(tab.id)}
             className={clsx(
-              "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold transition-colors relative z-10",
-              isActive ? "text-primary-green" : "text-gray-400 hover:text-white"
+              "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all duration-300 relative z-10",
+              isActive ? "text-primary-green" : "text-slate-200 hover:text-white hover:bg-white/5"
             )}
           >
-            <Icon size={16} />
-            <span className="hidden sm:inline">{tab.label}</span>
+            <div className={clsx("transition-transform duration-300", isActive && "scale-110")}>
+              <Icon size={16} />
+            </div>
+            <span className="hidden sm:inline text-[10px]">{tab.label}</span>
             {isActive && (
               <motion.div
                 layoutId="activeTabBackground"
-                className="absolute inset-0 bg-dark-600 rounded-lg -z-10 shadow-sm border border-white/5"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                className="absolute inset-0 bg-primary-green/20 backdrop-blur-md rounded-xl -z-10 shadow-[0_0_15px_rgba(34,197,94,0.15)] border border-primary-green/30"
+                transition={{ type: "spring", bounce: 0.15, duration: 0.6 }}
               />
             )}
           </button>

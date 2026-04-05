@@ -9,9 +9,10 @@ import RouteInsightsPanel from './RouteInsightsPanel';
 interface BottomPanelProps {
   nav: UseNavigationReturn;
   mapRef: React.RefObject<google.maps.Map | null>;
+  showSimulateButton?: boolean;
 }
 
-export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
+export default function BottomPanel({ nav, mapRef, showSimulateButton = true }: BottomPanelProps) {
   const { 
     directionsResult, 
     selectedRouteIndex, 
@@ -39,7 +40,7 @@ export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-10 gap-3">
           <Loader2 className="w-8 h-8 text-primary-green animate-spin" />
-          <span className="text-gray-400 animate-pulse">Calculating optimal routes...</span>
+          <span className="text-slate-200 font-medium animate-pulse">Calculating optimal routes...</span>
         </div>
       )}
 
@@ -73,11 +74,9 @@ export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
         )}
       </AnimatePresence>
 
-      {/* Start CTA (Only show when inputs are ready and routes are fetched) */}
-      {isReady && directionsResult && !isLoading && (
+      {/* Start CTA (Only show when inputs are ready, routes fetched, AND showSimulateButton is enabled) */}
+      {showSimulateButton && isReady && directionsResult && !isLoading && (
         <div className="flex flex-col gap-4 mt-4 pt-4 border-t border-white/10">
-
-          {/* Start Navigation / Start Simulation */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -87,9 +86,7 @@ export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
             className="w-full py-4 bg-primary-green text-dark-900 rounded-2xl font-bold shadow-xl cursor-pointer flex justify-center items-center gap-2 hover:bg-primary-green/90 transition"
           >
             <Navigation size={20} fill="currentColor" />
-            {isNavigating
-              ? 'Navigation Active'
-              : 'Start Simulation'}
+            {isNavigating ? 'Navigation Active' : 'Start Simulation'}
           </motion.div>
         </div>
       )}

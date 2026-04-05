@@ -1,4 +1,3 @@
-import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Navigation, ArrowLeft, ArrowRight, ArrowUp,
@@ -33,7 +32,6 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
     isOffRoute,
   } = nav;
 
-  // 1. Extract the remote control for our Trip Summary Modal
   const { setShowTripSummary, isSimulationRunning, showTripSummary } = useNavigationStore();
 
   if (!isNavigating || showTripSummary) return null;
@@ -43,26 +41,19 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
   const currentStep = steps[primaryStepIndex];
   const nextStep = steps[primaryStepIndex + 1];
 
-  // 2. The Intercept Function
   const handleEndNavigation = () => {
-    // Pop open the rating modal!
     setShowTripSummary(true); 
-    
-    // Notice we DO NOT clear the map or stop the route here yet!
-    // We let the modal handle clearing the map after the user rates it, 
-    // ensuring the route stays visible in the background and the AI gets the data.
   };
 
-  return createPortal(
-    <div className="fixed inset-0 z-[8000] pointer-events-none">
-
+  return (
+    <div className="absolute inset-0 z-[100] pointer-events-none overflow-hidden">
       {/* ── Top instruction card ─────────────────────────────────────────── */}
       <motion.div
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0,   opacity: 1 }}
         exit={{ y: -80,    opacity: 0 }}
         transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
-        className="pointer-events-auto absolute top-0 left-0 right-0 mx-auto max-w-lg mt-4 px-4"
+        className="pointer-events-auto absolute top-0 left-0 right-0 mx-auto max-w-lg mt-6 px-6"
       >
         {/* Off-route banner */}
         <AnimatePresence>
@@ -84,7 +75,7 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="mb-2 flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-green/20 border border-primary-green/30 backdrop-blur text-primary-green text-sm font-bold shadow-lg"
+              className="mb-3 flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-green/20 border border-primary-green/30 backdrop-blur text-primary-green text-sm font-bold shadow-lg"
             >
               <Zap size={16} />
               Simulation in progress
@@ -96,17 +87,14 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
           {/* Main instruction row */}
           {currentStep && (
             <div className="flex items-center gap-4 px-5 py-4">
-              {/* Maneuver icon in green circle */}
               <div className="w-14 h-14 rounded-full bg-primary-green flex items-center justify-center flex-shrink-0 shadow-lg">
                 <ManeuverIcon maneuver={currentStep.maneuver} />
               </div>
 
               <div className="flex-1 min-w-0">
-                {/* Distance to maneuver */}
                 <p className="text-3xl font-black text-white leading-none">
                   {distanceToNext}
                 </p>
-                {/* Instruction text */}
                 <p className="text-sm text-gray-300 mt-1 leading-snug line-clamp-2">
                   {stripHtml(currentStep.instructions)}
                 </p>
@@ -137,7 +125,6 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
         className="pointer-events-auto absolute bottom-0 left-0 right-0"
       >
         <div className="bg-dark-900/95 backdrop-blur-xl border-t border-white/10 shadow-2xl px-6 py-4 flex items-center justify-between gap-4">
-          {/* ETA chips */}
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-2">
               <Clock size={16} className="text-primary-green" />
@@ -149,13 +136,11 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
             </div>
           </div>
 
-          {/* Step progress */}
           <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
             <Navigation size={12} className="text-primary-green" />
             Step {Math.min(primaryStepIndex + 1, steps.length)} of {steps.length}
           </div>
 
-          {/* 3. Updated End Navigation Button */}
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
@@ -167,8 +152,6 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
           </motion.button>
         </div>
       </motion.div>
-
-    </div>,
-    document.body
+    </div>
   );
 }
