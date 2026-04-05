@@ -1,6 +1,6 @@
 
 
-# 🌙 Midnight Maps
+# Midnight Maps
 ### *Midnight Maps — AI-Powered Safety Navigation for the Night*
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
@@ -9,6 +9,9 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://mongodb.com/)
 [![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![Google Maps](https://img.shields.io/badge/Google%20Maps-API-4285F4?style=for-the-badge&logo=google-maps&logoColor=white)](https://developers.google.com/maps)
+[![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![ResNet](https://img.shields.io/badge/ResNet-CNN_Model-000000?style=for-the-badge)]()
+[![Computer Vision](https://img.shields.io/badge/Computer%20Vision-ResNet--Based-blue?style=for-the-badge)]()
 
 ---
 
@@ -18,31 +21,13 @@
 
 **A comprehensive full-stack navigation platform that scores every road segment for night-time safety using infrastructure data (street lighting + CCTV coverage), ambient activity patterns, and a live Reinforcement Learning feedback loop — so your route suggestions actually improve the more people use it.**
 
-[📺 Demo](#-navigation-simulation) · [🚀 Setup](#-getting-started) · [🧠 Architecture](#-system-architecture) · [📊 Algorithm](#-safety-scoring-algorithm) · [🗂️ API Reference](#-api-reference)
+[Try Live App](https://midnight-maps.vercel.app) · [ Watch Demo](https://youtu.be/AAlChO91CCU)
+
+---
 
 </div>
 
----
-
-## 📋 Table of Contents
-
-- [🌟 Why This Exists](#-why-this-exists)
-- [✨ Feature Showcase](#-feature-showcase)
-- [🏗️ System Architecture](#-system-architecture)
-- [🧠 Safety Scoring Algorithm](#-safety-scoring-algorithm)
-- [🔄 RL Learning Pipeline](#-reinforcement-learning-pipeline)
-- [📊 Data Flow](#-data-flow)
-- [🛠️ Tech Stack](#-tech-stack)
-- [📁 Project Structure](#-project-structure)
-- [🚀 Getting Started](#-getting-started)
-- [🗂️ API Reference](#-api-reference)
-- [📐 Data Schema](#-data-schema)
-- [🗺️ Datasets](#-datasets)
-- [🧪 Model Evaluation](#-model-evaluation)
-
----
-
-## 🌟 Why This Exists
+##  The Problem
 
 Existing navigation apps (Google Maps, Apple Maps) optimize **purely for speed**. They don't know:
 
@@ -51,115 +36,200 @@ Existing navigation apps (Google Maps, Apple Maps) optimize **purely for speed**
 - Whether foot traffic makes the area feel safe
 - Whether the route passes through isolated underpasses or dead-ends
 
-**Midnight Maps** fills this gap by building a city-wide **safety graph** on top of OpenStreetMap road data, enriched with real CCTV camera positions, street lamp data, and user feedback — then using a **Reinforcement Learning agent** to continuously improve its scoring model.
+**Midnight Maps** fills this gap by building a city-wide **safety graph** on top of OpenStreetMap road data, enriched with real CCTV camera positions, street lamp data, and user feedback, then using a **Reinforcement Learning agent** to continuously improve its scoring model.
+
+---
+## Midnight Maps - Landing Page
+<img width="1919" height="994" alt="image" src="https://github.com/user-attachments/assets/874c047a-6e7a-49ee-a643-3fce1894fa6f" />
 
 ---
 
-## ✨ Feature Showcase
+##  Feature Showcase
 
-### 🛡️ AI Safety Route Ranking
+# Route Ranking based on Safety
 
+Three routes are compared simultaneously and ranked as **Safest**, **Balanced**, or **Fastest**—backed by real-time safety computation.
 
-<img width="537" height="858" alt="image" src="https://github.com/user-attachments/assets/cbebe8c5-1384-43f6-a4d2-460a89e04cce" />
-
-
-Three routes are compared simultaneously and ranked as **Safest**, **Balanced**, or **Fastest** — each backed by live safety score computation across every road segment.
-
-
-
-
-```
-Route Score = f(Lighting, Surveillance, Activity, Environment)
-           × Time-of-Day Weights × Dark & Deserted Penalty
-```
-
-| Badge | Meaning |
-|-------|---------|
-| 🟢 **Safest** | Maximizes `meanSafety × 0.7 + minScore × 0.3` |
-| 🔵 **Balanced** | `meanSafety - timePenalty × 0.75` |
-| 🟡 **Fastest** | Minimum travel duration |
+<table>
+  <tr>
+    <td width="30%" valign="top" rowspan="2">
+      <img src="https://github.com/user-attachments/assets/cbebe8c5-1384-43f6-a4d2-460a89e04cce" alt="Safety Interface" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+    </td>
+    <td width="70%" valign="top">
+      <h3>Scoring Logic</h3>
+      <p>Routes are processed through a multi-factor function that adjusts dynamically based on environmental shifts:</p>
+      <code>Route Score = f(Lighting, Surveillance, Activity, Environment)</code><br>
+      <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;× Time-of-Day Weights × Dark & Deserted Penalty</code>
+      <br><br>
+      <table>
+        <thead>
+          <tr>
+            <th>Badge</th>
+            <th>Optimization Formula</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>🟢 <b>Safest</b></td>
+            <td><code>meanSafety × 0.7 + minScore × 0.3</code></td>
+          </tr>
+          <tr>
+            <td>🔵 <b>Balanced</b></td>
+            <td><code>meanSafety - (timePenalty × 0.75)</code></td>
+          </tr>
+          <tr>
+            <td>🟡 <b>Fastest</b></td>
+            <td><code>min(travel_duration)</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+  <tr>
+  </tr>
+</table>
 
 ---
+###  CCTV Camera Overlay
 
-### 📷 CCTV Camera Overlay
+<p align="center" style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/user-attachments/assets/728df678-901f-46e0-93d3-17e0fbc821c6" width="49%" alt="Day Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+  <img src="https://github.com/user-attachments/assets/bb8c6519-758e-4d25-8446-1ee1cbf497e1" width="49%" alt="Night Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+</p>
 
+This Toggle button shows an overlay of all the cameras present in the region according to our dataset , For users the cameras can be shown in their Proximity (eg: ALL cameras within 50 m radius ) , but currently all the cameras are shown to validate how correctly our algorithm measures safety based on the cameras present.
 
-<img width="1341" height="912" alt="Screenshot 2026-04-05 222336" src="https://github.com/user-attachments/assets/728df678-901f-46e0-93d3-17e0fbc821c6" />
-<img width="1345" height="915" alt="Screenshot 2026-04-05 222344" src="https://github.com/user-attachments/assets/bb8c6519-758e-4d25-8446-1ee1cbf497e1" />
+#####  How CCTV Influences Safety Scores
 
-Toggle a live overlay of **CCTV camera locations** sourced from the `koramangala_cameras.json` dataset. Blue camera markers appear on every street with known camera coverage.
+Camera presence applies a dynamic **×1.35 multiplier** to the raw camera feature value (capped at a maximum of `1.0`).
+Because visibility is more critical after dark, this score carries different weights depending on the time of day.
 
-> **How it influences safety scores:** camera presence adds a ×1.35 multiplied boost to the raw camera feature value, capped at 1.0, contributing 15% (night) or 10% (day) to the total segment score.
+DAY - 10 %
+NIGHT - 15 %
 
-```
+**The Calculation:**
+```text
 C_final = min(1.0, C_raw × 1.35)
 ```
+---
+
+###  Street Lamp Overlay
+
+<p align="center" style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/user-attachments/assets/2913f499-ad2d-4c04-908c-074dfe2be2b1" width="49%" alt="Day Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+  <img src="https://github.com/user-attachments/assets/1f5f83eb-f52a-4f5a-9f09-3aa72a4c4534" width="49%" alt="Night Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+</p>
+
+Toggling the **street lighting layer** shows amber dot markers at every recorded lamp position from `koramangala_street_lamps.json` file. Currently this is done to demonstrate how the lightness and the safety scores are influenced by the street lamps present . Later for users , the lamps can be shown in their proximity or on their navigating path.
+
+**Why lighting is critical at night:** At night, lighting carries **40% weight** in the safety formula.
+A `lighting < 0.3` triggers an additional **15–30% penalty** on the base score.
 
 ---
 
-### 💡 Street Lamp Overlay
+### Route Intelligence Panel
 
-<!-- Add screenshot of Street Lamp Overlay here -->
+After the route analysis is complete, a collapsible **Route Intelligence** panel provides a transparent breakdown of exactly why a route received its safety score.
 
-<img width="1342" height="907" alt="Screenshot 2026-04-05 222317" src="https://github.com/user-attachments/assets/2913f499-ad2d-4c04-908c-074dfe2be2b1" />
-
-<img width="1348" height="908" alt="Screenshot 2026-04-05 222326" src="https://github.com/user-attachments/assets/1f5f83eb-f52a-4f5a-9f09-3aa72a4c4534" />
-
-
-Toggle the **street lighting layer** showing amber dot markers at every recorded lamp position from `koramangala_street_lamps.json`. Lamp density directly feeds the `lighting` feature per segment.
-
-> **Why lighting is critical at night:** At night, lighting carries **40% weight** in the safety formula. A `lighting < 0.3` triggers an additional **15–30% penalty** on the base score.
+<table>
+  <tr>
+    <td width="35%" valign="top">
+      <img src="https://github.com/user-attachments/assets/1048efbf-0f45-41d7-a381-434f97fce5cf" alt="Route Intelligence Panel" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 100%;">
+    </td>
+    <td width="65%" valign="top">
+      <h4>Nighttime Scoring Weights</h4>
+      <p>The algorithm adapts its weighting based on the time of day. Below is the breakdown for nighttime routing:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Data Source</th>
+            <th>Weight (Night)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td> <b>Lighting</b></td>
+            <td><code>features.lighting[timeSlot]</code></td>
+            <td><b>40%</b></td>
+          </tr>
+          <tr>
+            <td> <b>Surveillance</b></td>
+            <td><code>features.camera × 1.35</code></td>
+            <td><b>15%</b></td>
+          </tr>
+          <tr>
+            <td><b>Activity</b></td>
+            <td><code>features.activity[timeSlot]</code></td>
+            <td><b>25%</b></td>
+          </tr>
+          <tr>
+            <td><b>Context</b></td>
+            <td><code>features.environment</code></td>
+            <td><b>20%</b></td>
+          </tr>
+        </tbody>
+      </table>
+      <p align="right"><small><i>Weights shift dynamically during daylight hours to prioritize activity and environment over lighting.</i></small></p>
+    </td>
+  </tr>
+</table>
 
 ---
 
-### 📊 Route Intelligence Panel
+###  Map Overlay icons
 
-<img width="506" height="510" alt="image" src="https://github.com/user-attachments/assets/1048efbf-0f45-41d7-a381-434f97fce5cf" />
+The routing interface features a robust set of toggleable map layers on the right-hand panel. This allows users to visualize the exact environmental data driving their route's safety score.
 
 
-After route analysis, a collapsible **Route Intelligence** panel shows:
-
-| Metric | Source | Weight (Night) |
-|--------|--------|----------------|
-| 🔦 Lighting | `features.lighting[timeSlot]` | **40%** |
-| 📷 Surveillance | `features.camera × 1.35` | **15%** |
-| 🚶 Activity | `features.activity[timeSlot]` | **25%** |
-| 🌳 Context | `features.environment` | **20%** |
-
-The panel computes its own **local safety score** client-side using the same formula as the backend, making the UI always in sync without an extra API call.
+| Control  | Overlay Layer | Description & Routing Impact |
+| :---: | :--- | :--- |
+| <img src="https://github.com/user-attachments/assets/9307ba08-9cad-4416-9db5-01dd0e5706c8" alt="Placeholder: Base Map" width="30" height="30"> | **Base Map** | Toggles satellite imagery . |
+| <img src="https://github.com/user-attachments/assets/0d80e6aa-c843-4114-aacd-6a5ea44c5e01" alt="Placeholder: Traffic" width="30" height="30"> | **Traffic** | Shows Traffic layer . |
+| <img src="https://github.com/user-attachments/assets/22f05414-2b43-4732-b401-b0f288509855" alt="Placeholder: open shops" width="30" height="30"> | **Open shops and Police Nearby** | Displays Nearby open shops and Police Station nearby so users can feel safe on night streets. |
+| <img src="https://github.com/user-attachments/assets/ec917a5d-de8d-4d89-ac62-a99a3bde2d19" alt="Placeholder: cameras" width="30" height="30"> | **Show Cameras** | Overlays the map with cameras present |
+| <img src="https://github.com/user-attachments/assets/e43a2fbb-246a-445d-a73a-842313f3a1b5" alt="Placeholder: Lamps" width="30" height="30"> | **Show Lamps** | Overlays the map with Lamps present |
+| <img src="https://github.com/user-attachments/assets/902b7167-785e-4635-b36f-e75c25faf67e" alt="Placeholder: Midnight Toggle" width="30" height="30"> | **Midnight Toggle ** | This Toggles the current time to midnight so that users can inspect the safety in a night environment , also Needed for demonstration purposes |
+| <img src="https://github.com/user-attachments/assets/32838f6e-2ac5-4b6f-9d2d-7f9a0e8b2fc2" alt="Placeholder: Location" width="30" height="30"> | **Show My location** | On toggling Users current location is shown |
+| <img src="https://github.com/user-attachments/assets/a9780c77-598d-417d-b64c-5a7a6d228e2f" alt="Placeholder: StreetView" width="30" height="30"> | **Street View Pegman** | Users can drag and drop to see street views |
+| <img src="https://github.com/user-attachments/assets/ae1861a7-d43d-4036-bab5-5342efd644a2" alt="Placeholder: safety inspector" width="30" height="30"> | **Safety Inspector** | Shows all the safety metrics of a street |
 
 ---
 
-## 🗺️ Map Overlays
+### Safety Inspector (Street-Level)
 
-<img align="left" width="142" alt="Screenshot 2026-04-06 015451" src="https://github.com/user-attachments/assets/172456a7-df83-4561-b16b-d2281b7990ee" />
+<table>
+  <tr>
+    <td width="40%" valign="top">
+      <img src="https://github.com/user-attachments/assets/0c9f1f09-1552-4ca5-932a-839eabefa72d" alt="Safety Inspector View 1" style="border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin-bottom: 15px; width: 100%;">
+      <img src="https://github.com/user-attachments/assets/78573bf6-580f-466c-a90a-10fb4632b610" alt="Safety Inspector View 2" style="border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); width: 100%;">
+    </td>
+    <td width="60%" valign="top">
+      <h4>Deep Dive into Segment Data</h4>
+      <p>The <b>Safety Inspector</b> mode empowers users to interrogate any individual road segment directly on the map. Instantly retrieve raw safety metrics without ever leaving your navigation flow.</p>
+      <hr>
+      <h5>Instant Safety Metrics Shown:</h5>
+      <ul>
+        <li> <b>Lighting Profile:</b> View current illumination levels and identify potential dark zones.</li>
+        <li> <b>Camera Coverage:</b> Verify the density of active surveillance and CCTV presence.</li>
+        <li> <b>Activity Profile:</b> Check live foot traffic.</li>
+        <li> <b>Environment Context:</b> See Whether the street is in residential safe area or isolated empty area.</li>
+      </ul>
+      <br>
+      <blockquote>
+        <i> The images here show how lighting is affected by the presence of street lamps , both the images are of night time hence low lighting score </i>
+      </blockquote>
+    </td>
+  </tr>
+</table>
 
-To help users build trust in the AI's safety routing, the application provides rich, interactive map overlays. Instead of just taking the algorithm's word for it, users can directly visualize the infrastructure data that powers their safety scores mapped along their path in real-time.
+------
 
-hese overlays turn a "black box" safety score into a transparent, explainable decision. If a route shows a low safety score, a user can toggle the **Street Lamps** layer to instantly spot a long, unlit stretch of road. Conversely, toggling the **Cameras** layer might reveal a well-monitored surveillance corridor that explains why an alternate route was marked as safe despite lower foot traffic. This visual validation is crucial when navigating unfamiliar areas at night.
+###  Navigation Simulation
 
-
-| Overlay | Toggle | Data Source |
-|---------|--------|-------------|
-| 📷 CCTV Cameras | `CameraToggle` | `koramangala_cameras.json` |
-| 💡 Street Lamps | `LampToggle` | `koramangala_street_lamps.json` |
-| 🚔 Police Stations | Route Intelligence panel | Hardcoded demo + Google Places |
-| 🚦 Live Traffic | `TrafficToggle` | Google Maps Traffic Layer |
-| 🔔 Nearby Alerts | `NearbyAlertsToggle` | Google Places API (live) |
-| 🌙 Night Mode | `TimeModeToggle` | Dark map style override |
-
-<br clear="left"/>
-
-
-### 🧭 Navigation Simulation
-
-**Note on Simulation:** This feature was built specifically for the hackathon environment. Because I cannot practically field-test routing over roads at night, so I built this simulation engine. It allows users and judges to experience the full navigation flow, UI transformations, and post-trip Reinforcement Learning feedback loop directly from their browser.
-
+**Note on Simulation:** This feature was built specifically for the hackathon environment. Because I cannot practically field test routing over roads at night, so I built this simulation engine. It allows users and judges to experience the full navigation flow, UI transformations, and post-trip Reinforcement Learning feedback loop directly from their browser.
 
 <img width="1919" height="1079" alt="Screenshot 2026-04-06 015559" src="https://github.com/user-attachments/assets/96a4355d-a9dc-4c22-8aca-0088c2530d99" />
-
-
-
 
 A full route simulation engine drives a marker along the selected route at configurable speed (default 12 m/s ≈ 43 km/h). During simulation:
 
@@ -170,36 +240,19 @@ A full route simulation engine drives a marker along the selected route at confi
 
 ---
 
-### 🔍 Safety Inspector (Street-Level)
+###  Google Street View Integration
 
-<img width="1333" height="910" alt="Screenshot 2026-04-05 222037" src="https://github.com/user-attachments/assets/10d22942-9256-49e5-bb2f-5471e26935fe" />
-
-<img width="1345" height="915" alt="Screenshot 2026-04-05 222225" src="https://github.com/user-attachments/assets/af648639-eeef-4a71-910f-45198a5dd849" />
-
-
-
-The **Safety Inspector** mode lets users inspect any segment on the map and see its raw safety features — lighting profile, camera coverage, activity profile — without leaving the map.
-
----
-
-### 🌐 Google Street View Integration
-<img width="1338" height="913" alt="Screenshot 2026-04-05 222117" src="https://github.com/user-attachments/assets/13d954ef-f1f0-4340-b804-8c95e25b9c50" />
-
-<img width="1351" height="912" alt="Screenshot 2026-04-05 222937" src="https://github.com/user-attachments/assets/d2a93031-a41d-45b0-b2a9-382c217fc186" />
-
-
-<img width="1355" height="920" alt="Screenshot 2026-04-05 222646" src="https://github.com/user-attachments/assets/ccd423a7-0c87-4fbf-ac67-71fd12174c6f" />
-
-
-<img width="1357" height="920" alt="Screenshot 2026-04-06 015802" src="https://github.com/user-attachments/assets/69122880-56ff-4c99-8b7e-a66e8108b9f5" />
-
-
+<p align="center" style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/user-attachments/assets/ba400fa6-2ac1-4f20-9e3d-6935219c923c" width="49%" alt="Day Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+  <img src="https://github.com/user-attachments/assets/3df8f28f-ff14-4ae9-b161-a1c5b713ba32" width="49%" alt="Night Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+</p>
 
 A **Pegman control** lets users drop into Street View panorama at any location to visually validate the AI's safety assessment before committing to a route.
+In the images Shown we can see , how the environment is assessed using the street view images , for the street shown in the first image environment context is higher while lower for that in second image. Also the reason for low lighting is that the screenshot was taken at night time .
 
 ---
 
-### ⭐ Community Feedback Loop
+###  Community Feedback Loop
 
 
 <img width="1340" height="1032" alt="Screenshot 2026-04-06 015908" src="https://github.com/user-attachments/assets/20d4ee63-df73-4e08-a64c-bf7acc09b3ce" />
