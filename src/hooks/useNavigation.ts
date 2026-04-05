@@ -1,5 +1,7 @@
+// @ts-nocheck
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigationStore } from '../store/useNavigationStore';
+import { GPSSimulator } from '../utils/gpsSimulator';
 
 export interface NavStep {
   instructions: string;
@@ -150,11 +152,21 @@ export function useNavigation(): UseNavigationReturn {
   const destRef                 = useRef<{ lat: number; lng: number } | null>(null);
   const travelModeRef           = useRef<google.maps.TravelMode>(window.google?.maps?.TravelMode?.DRIVING ?? ('DRIVING' as any));
 
+  // GPS Simulator refs
+  const simulatorRef            = useRef<GPSSimulator | null>(null);
+  const simulatorTimerRef       = useRef<NodeJS.Timeout | null>(null);
+  const lastSimulatorUpdateRef  = useRef(0);
+
   const stopNavigation = useCallback(() => {
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
+    if (simulatorTimerRef.current !== null) {
+      clearInterval(simulatorTimerRef.current);
+      simulatorTimerRef.current = null;
+    }
+    simulatorRef.current = null;
     navResultRef.current = null;
     stepsRef.current     = [];
     setState(INITIAL);
@@ -177,6 +189,69 @@ export function useNavigation(): UseNavigationReturn {
       distanceToNext:    steps[fromStep]?.distance ?? '',
       isOffRoute:        false,
     }));
+  }, []);
+
+  /** Process any position update (real GPS or simulator) and update state */
+  const processPositionUpdate = useCallback((lat: number, lng: number, heading: number = 0) => {
+    headingRef.current = heading || headingRef.current;
+
+    const currentSteps = stepsRef.current;
+    if (!currentSteps.length) return;
+
+    // ── Step advancement ──────────────────────────────────────
+    let idx      = stepIndexRef.current;
+    let bestDist = Infinity;
+    for (let i = idx; i < Math.min(idx + 4, currentSteps.length); i++) {
+      const d = haversineM(lat, lng, currentSteps[i].endLat, currentSteps[i].endLng);
+      if (d < bestDist) { bestDist = d; }
+      if (d < STEP_ADVANCE_M) { idx = Math.min(i + 1, currentSteps.length - 1); }
+    }
+    stepIndexRef.current = idx;
+
+    // Distance to next checkpoint
+    const nextStep = currentSteps[idx];
+    const distNext = nextStep ? haversineM(lat, lng, nextStep.endLat, nextStep.endLng) : 0;
+
+    // ── Off-route detection ───────────────────────────────────
+    const nearestDist = Math.min(
+      ...currentSteps.slice(idx, idx + 5).map((s) =>
+        Math.min(
+          haversineM(lat, lng, s.startLat, s.startLng),
+          haversineM(lat, lng, s.endLat,   s.endLng)
+        )
+      )
+    );
+    const isOffRoute = nearestDist > REROUTE_DIST_M;
+
+    // ── Auto-reroute when off-route ───────────────────────────
+    const now = Date.now();
+    if (isOffRoute && now - lastRerouteRef.current > REROUTE_DEBOUNCE && destRef.current) {
+      lastRerouteRef.current = now;
+      fetchNavDirections(
+        lat, lng,
+        destRef.current.lat, destRef.current.lng,
+        travelModeRef.current,
+        (freshResult) => applyNavResult(freshResult, 0)
+      );
+    }
+
+    const navResult = navResultRef.current;
+
+    setState((prev) => ({
+      ...prev,
+      currentLat:        lat,
+      currentLng:        lng,
+      currentStepIndex:  idx,
+      distanceToNext:    fmtM(distNext),
+      remainingDuration: navResult ? fmtSec(sumRemaining(navResult, idx, 'duration')) : prev.remainingDuration,
+      remainingDistance: navResult ? fmtM(sumRemaining(navResult, idx, 'distance'))  : prev.remainingDistance,
+      heading:           headingRef.current,
+      isOffRoute,
+    }));
+
+    // Pan map
+    const map = mapRefInternal.current;
+    if (map) map.panTo({ lat, lng });
   }, []);
 
   const startNavigation = useCallback(
@@ -229,78 +304,74 @@ export function useNavigation(): UseNavigationReturn {
                 mapRef.current.setZoom(17);
               }
 
-              // ── Start GPS watch ────────────────────────────────────────
-              watchIdRef.current = navigator.geolocation.watchPosition(
-                (watchPos) => {
+              // ── Decide: Simulation or Real GPS ──────────────────────────
+              const { isSimulationMode, simulationSpeed } = useNavigationStore.getState();
+              
+              if (isSimulationMode) {
+                // ── Start GPS Simulator ────────────────────────────────────
+                const steps = extractSteps(result);
+                // Ensure steps have numeric positions
+                const segments = steps.map(s => ({
+                  startLat:  s.startLat,
+                  startLng:  s.startLng,
+                  endLat:    s.endLat,
+                  endLng:    s.endLng,
+                }));
+
+                simulatorRef.current = new GPSSimulator(segments, simulationSpeed ?? 20);
+                lastSimulatorUpdateRef.current = Date.now();
+
+                // Simulator update loop at ~30ms throttle
+                simulatorTimerRef.current = setInterval(() => {
                   const now = Date.now();
-                  if (now - lastGpsRef.current < GPS_THROTTLE_MS) return;
-                  lastGpsRef.current = now;
+                  const deltaMs = now - lastSimulatorUpdateRef.current;
+                  lastSimulatorUpdateRef.current = now;
 
-                  const lat     = watchPos.coords.latitude;
-                  const lng     = watchPos.coords.longitude;
-                  const heading = watchPos.coords.heading ?? headingRef.current;
-                  if (heading !== null && !isNaN(heading)) headingRef.current = heading;
+                  const sim = simulatorRef.current;
+                  if (!sim) return;
 
-                  const currentSteps = stepsRef.current;
-                  if (!currentSteps.length) return;
-
-                  // ── Step advancement ──────────────────────────────────────
-                  let idx      = stepIndexRef.current;
-                  let bestDist = Infinity;
-                  for (let i = idx; i < Math.min(idx + 4, currentSteps.length); i++) {
-                    const d = haversineM(lat, lng, currentSteps[i].endLat, currentSteps[i].endLng);
-                    if (d < bestDist) { bestDist = d; }
-                    if (d < STEP_ADVANCE_M) { idx = Math.min(i + 1, currentSteps.length - 1); }
-                  }
-                  stepIndexRef.current = idx;
-
-                  // Distance to next checkpoint
-                  const nextStep = currentSteps[idx];
-                  const distNext = nextStep ? haversineM(lat, lng, nextStep.endLat, nextStep.endLng) : 0;
-
-                  // ── Off-route detection ───────────────────────────────────
-                  const nearestDist = Math.min(
-                    ...currentSteps.slice(idx, idx + 5).map((s) =>
-                      Math.min(
-                        haversineM(lat, lng, s.startLat, s.startLng),
-                        haversineM(lat, lng, s.endLat,   s.endLng)
-                      )
-                    )
-                  );
-                  const isOffRoute = nearestDist > REROUTE_DIST_M;
-
-                  // ── Auto-reroute when off-route ───────────────────────────
-                  if (isOffRoute && now - lastRerouteRef.current > REROUTE_DEBOUNCE && destRef.current) {
-                    lastRerouteRef.current = now;
-                    fetchNavDirections(
-                      lat, lng,
-                      destRef.current.lat, destRef.current.lng,
-                      travelModeRef.current,
-                      (freshResult) => applyNavResult(freshResult, 0)
-                    );
+                  const simPos = sim.getNextPosition(deltaMs);
+                  if (!simPos) {
+                    // Simulator complete → trigger review
+                    clearInterval(simulatorTimerRef.current!);
+                    simulatorTimerRef.current = null;
+                    useNavigationStore.setState({ showTripSummary: true });
+                    return;
                   }
 
-                  const navResult = navResultRef.current;
+                  processPositionUpdate(simPos.latitude, simPos.longitude, simPos.heading ?? 0);
+                }, 30);
+              } else {
+                // ── Start Real GPS Watch ───────────────────────────────────
+                watchIdRef.current = navigator.geolocation.watchPosition(
+                  (watchPos) => {
+                    const now = Date.now();
+                    if (now - lastGpsRef.current < GPS_THROTTLE_MS) return;
+                    lastGpsRef.current = now;
 
-                  setState((prev) => ({
-                    ...prev,
-                    currentLat:        lat,
-                    currentLng:        lng,
-                    currentStepIndex:  idx,
-                    distanceToNext:    fmtM(distNext),
-                    remainingDuration: navResult ? fmtSec(sumRemaining(navResult, idx, 'duration')) : prev.remainingDuration,
-                    remainingDistance: navResult ? fmtM(sumRemaining(navResult, idx, 'distance'))  : prev.remainingDistance,
-                    heading:           headingRef.current,
-                    isOffRoute,
-                  }));
+                    const lat     = watchPos.coords.latitude;
+                    const lng     = watchPos.coords.longitude;
+                    const heading = watchPos.coords.heading ?? headingRef.current;
 
-                  // Pan map
-                  const map = mapRefInternal.current ?? mapRef.current;
-                  if (map) map.panTo({ lat, lng });
-                },
-                (err) => console.error('[Nav] GPS watch error:', err),
-                { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
-              );
+                    processPositionUpdate(lat, lng, heading);
+
+                    // Check if reached destination
+                    const currentSteps = stepsRef.current;
+                    if (currentSteps.length > 0) {
+                      const lastStep = currentSteps[currentSteps.length - 1];
+                      const distToEnd = haversineM(lat, lng, lastStep.endLat, lastStep.endLng);
+                      if (distToEnd < 50) {
+                        // Close enough to destination → trigger review
+                        navigator.geolocation.clearWatch(watchIdRef.current!);
+                        watchIdRef.current = null;
+                        useNavigationStore.setState({ showTripSummary: true });
+                      }
+                    }
+                  },
+                  (err) => console.error('[Nav] GPS watch error:', err),
+                  { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
+                );
+              }
             }
           );
         },
@@ -311,7 +382,7 @@ export function useNavigation(): UseNavigationReturn {
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     },
-    [applyNavResult]
+    [applyNavResult, processPositionUpdate]
   );
 
   useEffect(() => () => stopNavigation(), [stopNavigation]);

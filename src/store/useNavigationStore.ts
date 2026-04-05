@@ -10,6 +10,14 @@ export type MapTypeId = 'roadmap' | 'hybrid';
 
 export type TravelMode = "DRIVING" | "TWO_WHEELER" | "WALKING" | "BICYCLING";
 
+export interface RouteFeedbackChunk {
+  id: string;
+  label: string;
+  distance: number;
+  segmentIds: string[];
+  sampleCount: number;
+}
+
 export interface RouteMetric {
   routeIndex: number;
   meanSafety: number;
@@ -24,6 +32,7 @@ export interface RouteMetric {
     activity: number;
     environment: number;
   };
+  feedbackChunks?: RouteFeedbackChunk[];
 }
 
 interface NavigationState {
@@ -44,6 +53,13 @@ interface NavigationState {
   showCameras: boolean;
   showLamps: boolean;
   showPolice: boolean;
+  showTraffic: boolean;
+  showNearbyAlerts: boolean;
+
+  // Navigation modes
+  isSimulationMode: boolean;
+  isSimulationRunning: boolean;
+  simulationSpeed: number; // meters per second
 
   isLoading: boolean;
   error: string | null;
@@ -56,13 +72,25 @@ interface NavigationState {
   setDirectionsResult: (result: google.maps.DirectionsResult | null) => void;
   setSelectedRouteIndex: (index: number) => void;
   setRouteAnalysis: (analysis: any) => void;
-  submitFeedback: (type: 'segment' | 'route', targetId: any, rating: number) => Promise<void>;
+  submitFeedback: (type: 'segment' | 'route', targetId: any, rating: number) => Promise<boolean>;
+  submitRouteChunkFeedback: (payload: {
+    chunks: RouteFeedbackChunk[];
+    safestChunkId: string;
+    unsafeChunkId: string;
+  }) => Promise<boolean>;
   showTripSummary: boolean;
   setShowTripSummary: (show: boolean) => void;
   // Overlay Setters
   setShowCameras: (show: boolean) => void;
   setShowLamps: (show: boolean) => void;
   setShowPolice: (show: boolean) => void;
+  setShowTraffic: (show: boolean) => void;
+  setShowNearbyAlerts: (show: boolean) => void;
+
+  // Simulation controls
+  setIsSimulationMode: (sim: boolean) => void;
+  setIsSimulationRunning: (running: boolean) => void;
+  setSimulationSpeed: (speed: number) => void;
 
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -86,6 +114,13 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   showCameras: false,
   showLamps: false,
   showPolice: false,
+  showTraffic: false,
+  showNearbyAlerts: false,
+
+  // Navigation modes
+  isSimulationMode: true,
+  isSimulationRunning: false,
+  simulationSpeed: 20, // 20 m/s default
 
   isLoading: false,
   error: null,
@@ -106,6 +141,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
       shortestRouteIndex: 0, 
       safestRouteIndex: routeCount > 1 ? 1 : 0,
       balancedRouteIndex: routeCount > 2 ? 2 : (routeCount > 1 ? 1 : 0),
+      isSimulationRunning: false,
       error: null 
     });
   },
@@ -118,39 +154,92 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   }),
   submitFeedback: async (type, targetId, rating) => {
     try {
-      // Grab the user's exact local time slot
       const localTimeSlot = Math.floor(new Date().getHours() / 2);
-      
-      const response = await fetch('/api/segments/rate', {
+      const payload =
+        type === 'segment'
+          ? {
+              endpoint: '/api/segments/rate-segment',
+              body: {
+                segment_id: targetId,
+                rating,
+                time_slot: localTimeSlot,
+                confidence: 0.85,
+              },
+            }
+          : {
+              endpoint: '/api/segments/rate-route',
+              body: {
+                route_segments: Array.isArray(targetId) ? targetId : [targetId],
+                overall_rating: rating,
+                confidence: 0.8,
+              },
+            };
+
+      const response = await fetch(payload.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: type,
-          data: targetId,
-          rating: rating,
-          timeSlot: localTimeSlot,
-          userId: 'hackathon_demo_user' // Anonymous identifier
-        })
+        body: JSON.stringify(payload.body),
       });
 
       const result = await response.json();
       if (result.success) {
-        // Show a success message in the UI
         set({ feedbackStatus: "Model Updated" });
-        
-        // Clear the success message after 3 seconds so they can rate again later if needed
         setTimeout(() => set({ feedbackStatus: null }), 3000);
+        return true;
       }
     } catch (err) {
       console.error("Failed to submit feedback", err);
     }
+    return false;
+  },
+  submitRouteChunkFeedback: async ({ chunks, safestChunkId, unsafeChunkId }) => {
+    try {
+      const localTimeSlot = Math.floor(new Date().getHours() / 2);
+      const response = await fetch('/api/segments/rate-route-chunks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          route_chunks: chunks.map((chunk) => ({
+            chunk_id: chunk.id,
+            label: chunk.label,
+            distance: chunk.distance,
+            segment_ids: chunk.segmentIds,
+            sample_count: chunk.sampleCount,
+          })),
+          safest_chunk_id: safestChunkId,
+          unsafe_chunk_id: unsafeChunkId,
+          time_slot: localTimeSlot,
+          confidence: 0.9,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+      if (response.ok && result?.success) {
+        set({ feedbackStatus: "Model Updated" });
+        setTimeout(() => set({ feedbackStatus: null }), 3000);
+        return true;
+      }
+
+      console.error('Failed to submit route chunk feedback', {
+        status: response.status,
+        result,
+      });
+    } catch (err) {
+      console.error('Failed to submit route chunk feedback', err);
+    }
+    return false;
   },
 
   // Overlay Actions
   setShowCameras: (show) => set({ showCameras: show }),
   setShowLamps: (show) => set({ showLamps: show }),
   setShowPolice: (show) => set({ showPolice: show }),
+  setShowTraffic: (show) => set({ showTraffic: show }),
+  setShowNearbyAlerts: (show) => set({ showNearbyAlerts: show }),
+  setIsSimulationMode: (sim) => set({ isSimulationMode: sim }),
+  setIsSimulationRunning: (running) => set({ isSimulationRunning: running }),
+  setSimulationSpeed: (speed) => set({ simulationSpeed: Math.max(1, Math.min(100, speed)) }),
 
   setIsLoading: (loading) => set({ isLoading: loading }),
-  setError: (error) => set({ error, directionsResult: null, isLoading: false }),
+  setError: (error) => set({ error, directionsResult: null, isLoading: false, isSimulationRunning: false }),
 }));

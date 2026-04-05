@@ -52,6 +52,8 @@ export function useDirections() {
       setError(null);
     }
 
+    const localTimeSlot = Math.floor(new Date().getHours() / 2);
+
     const directionsService = new window.google.maps.DirectionsService();
 
     const googleModeMap: Record<string, google.maps.TravelMode> = {
@@ -85,7 +87,10 @@ export function useDirections() {
           fetch('/api/segments/analyze-routes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ routes: routesToAnalyze }),
+            body: JSON.stringify({
+              routes: routesToAnalyze,
+              timeSlot: localTimeSlot,
+            }),
           })
             .then(res => res.json())
             .then(data => {
