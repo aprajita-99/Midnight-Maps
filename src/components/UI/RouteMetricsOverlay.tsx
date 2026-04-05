@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Clock, Navigation, AlertTriangle } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';

@@ -1,15 +1,15 @@
-import { GoogleMap, Marker, Circle, DirectionsRenderer, OverlayView } from '@react-google-maps/api';
+import { GoogleMap, Marker, Circle, OverlayView } from '@react-google-maps/api';
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Crosshair, MapPin, X, Copy, Check } from 'lucide-react';
+import { Crosshair, MapPin, X, Copy, Check, Shield, Store as StoreIcon } from 'lucide-react';
 import clsx from 'clsx';
 import RoutePolylines from './RoutePolylines.tsx';
 import { useNavigationStore } from '../../store/useNavigationStore.ts';
 import { MapDarkTheme } from './MapDarkTheme.ts';
 import { useDirections } from '../../hooks/useDirections.ts';
 import type { UserLocation } from '../../hooks/useUserLocation.ts';
-import type { NavState } from '../../hooks/useNavigation.ts';
+import type { NavState } from '../../hooks/useNavigationController.ts';
 import SafetyInspector from './SafetyInspector';
 
 import cameraData from '../../../datasets/koramangala_cameras.json';
@@ -19,7 +19,7 @@ interface MapViewProps {
   userLocation?: UserLocation | null;
   isLocationEnabled?: boolean;
   mapRef?: React.MutableRefObject<google.maps.Map | null>;
-  navState?: Pick<NavState, 'isNavigating' | 'currentLat' | 'currentLng' | 'currentStepIndex' | 'steps' | 'heading' | 'navDirectionsResult'>;
+  navState?: Pick<NavState, 'isNavigating' | 'currentLat' | 'currentLng' | 'currentStepIndex' | 'steps' | 'heading' | 'navDirectionsResult' | 'progressDistanceMeters'>;
 }
 
 const containerStyle = { width: '100vw', height: '100vh' };
@@ -27,15 +27,193 @@ const center = {
   lat: 12.9352,
   lng: 77.6245
 };
+const CAMERA_LOOKAHEAD_METERS = 35;
+const CAMERA_LEFT_OFFSET_PX = 100;
+const POSITION_SMOOTHING = 0.2;
+const HEADING_SMOOTHING = 0.18;
+const NEARBY_ALERT_RADIUS_METERS = 200;
+const NEARBY_ALERT_REFRESH_METERS = 80;
+const NEARBY_ALERT_REFRESH_MS = 6000;
+
+interface SmoothedNavPosition {
+  lat: number;
+  lng: number;
+  heading: number;
+}
+
+type NearbyAlertKind = 'police' | 'shop';
+
+interface NearbyAlertPlace {
+  id: string;
+  kind: NearbyAlertKind;
+  name: string;
+  position: google.maps.LatLngLiteral;
+  distanceMeters: number;
+  vicinity?: string;
+}
+
+function normalizeHeading(heading: number) {
+  return ((heading % 360) + 360) % 360;
+}
+
+function smoothHeadingTransition(current: number, target: number, factor: number) {
+  const delta = ((target - current + 540) % 360) - 180;
+  return normalizeHeading(current + delta * factor);
+}
+
+function lerp(start: number, end: number, factor: number) {
+  return start + (end - start) * factor;
+}
+
+function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const earthRadiusM = 6_371_000;
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(deltaPhi / 2) ** 2 +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+
+  return earthRadiusM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function moveCoordinate(
+  lat: number,
+  lng: number,
+  bearing: number,
+  distanceM: number
+) {
+  const earthRadiusM = 6_371_000;
+  const phi1 = (lat * Math.PI) / 180;
+  const lambda1 = (lng * Math.PI) / 180;
+  const theta = (bearing * Math.PI) / 180;
+  const delta = distanceM / earthRadiusM;
+
+  const phi2 = Math.asin(
+    Math.sin(phi1) * Math.cos(delta) +
+      Math.cos(phi1) * Math.sin(delta) * Math.cos(theta)
+  );
+
+  const lambda2 =
+    lambda1 +
+    Math.atan2(
+      Math.sin(theta) * Math.sin(delta) * Math.cos(phi1),
+      Math.cos(delta) - Math.sin(phi1) * Math.sin(phi2)
+    );
+
+  return {
+    lat: phi2 * (180 / Math.PI),
+    lng: lambda2 * (180 / Math.PI),
+  };
+}
+
+function rotatePixelOffset(offsetX: number, offsetY: number, rotationDeg: number) {
+  const rad = (rotationDeg * Math.PI) / 180;
+  return {
+    x: offsetX * Math.cos(rad) - offsetY * Math.sin(rad),
+    y: offsetX * Math.sin(rad) + offsetY * Math.cos(rad),
+  };
+}
+
+function supportsVectorCamera(map: google.maps.Map) {
+  const renderingTypeGetter = (
+    map as google.maps.Map & {
+      getRenderingType?: () => google.maps.RenderingType | string;
+    }
+  ).getRenderingType;
+  const renderingType = renderingTypeGetter?.call(map);
+  const vectorRenderingType = window.google?.maps?.RenderingType?.VECTOR;
+
+  return Boolean(vectorRenderingType && renderingType === vectorRenderingType);
+}
+
+function offsetLatLngByPixels(
+  map: google.maps.Map,
+  position: google.maps.LatLngLiteral,
+  offsetX: number,
+  offsetY: number,
+  rotationDeg = 0
+) {
+  const projection = map.getProjection();
+  const zoom = map.getZoom();
+  if (!projection || zoom == null) {
+    return position;
+  }
+
+  const worldPoint = projection.fromLatLngToPoint(new window.google.maps.LatLng(position));
+  if (!worldPoint) {
+    return position;
+  }
+
+  const scale = 2 ** zoom;
+  const rotatedOffset = rotatePixelOffset(offsetX, offsetY, rotationDeg);
+  const shiftedPoint = new window.google.maps.Point(
+    worldPoint.x + rotatedOffset.x / scale,
+    worldPoint.y + rotatedOffset.y / scale
+  );
+  const shiftedLatLng = projection.fromPointToLatLng(shiftedPoint);
+  if (!shiftedLatLng) {
+    return position;
+  }
+
+  return {
+    lat: shiftedLatLng.lat(),
+    lng: shiftedLatLng.lng(),
+  };
+}
+
+function NearbyAlertMarker({ alert }: { alert: NearbyAlertPlace }) {
+  const Icon = alert.kind === 'police' ? Shield : StoreIcon;
+  const label = alert.kind === 'police' ? 'Police' : 'Open Shop';
+
+  return (
+    <OverlayView
+      position={alert.position}
+      mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+    >
+      <div
+        title={`${alert.name} • ${Math.round(alert.distanceMeters)} m`}
+        className="relative -translate-x-1/2 -translate-y-full pointer-events-none"
+      >
+        <motion.div
+          animate={{
+            scale: [1, 1.8, 1],
+            opacity: [0.5, 0, 0.5],
+          }}
+          transition={{
+            duration: 1.6,
+            repeat: Infinity,
+            ease: 'easeOut',
+          }}
+          className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500/50"
+        />
+        <div className="relative flex items-center gap-1.5 rounded-full border border-red-300/80 bg-red-600/95 px-3 py-1.5 shadow-[0_0_25px_rgba(239,68,68,0.45)]">
+          <Icon size={12} className="text-white" />
+          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white">
+            {label}
+          </span>
+        </div>
+      </div>
+    </OverlayView>
+  );
+}
+
+function isNearbyAlertPlace(place: NearbyAlertPlace | null): place is NearbyAlertPlace {
+  return place !== null;
+}
 
 export default function MapView({ userLocation, isLocationEnabled, mapRef: externalMapRef, navState }: MapViewProps) {
   const store = useNavigationStore();
   
   // Grab the toggle states from our Zustand store
-  const { showCameras, showLamps, showPolice } = store;
+  const { showCameras, showLamps, showPolice, showNearbyAlerts } = store;
 
   const [, setMap] = useState<google.maps.Map | null>(null);
   const internalMapRef = useRef<google.maps.Map | null>(null);
+  const nearbyPlacesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+  const nearbyQueryMetaRef = useRef<{ lat: number; lng: number; timestamp: number } | null>(null);
+  const nearbyRequestIdRef = useRef(0);
   const storeRef = useRef(store);
   storeRef.current = store;
 
@@ -54,6 +232,99 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
   const [isFollowing, setIsFollowing] = useState(true);
   const isFollowingRef = useRef(true);   // readable inside callbacks without stale closure
   const lastHeadingRef = useRef(0);
+  const lastCameraUpdateRef = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
+  const targetNavPositionRef = useRef<SmoothedNavPosition | null>(null);
+  const smoothedNavPositionRef = useRef<SmoothedNavPosition | null>(null);
+  const [smoothedNavPosition, setSmoothedNavPosition] = useState<SmoothedNavPosition | null>(null);
+  const [nearbyAlerts, setNearbyAlerts] = useState<NearbyAlertPlace[]>([]);
+
+  const updateFollowCamera = useCallback((
+    map: google.maps.Map,
+    lat: number,
+    lng: number,
+    heading: number,
+    zoom = 18
+  ) => {
+    const isVectorMap = supportsVectorCamera(map);
+    const aheadPoint = moveCoordinate(lat, lng, heading, CAMERA_LOOKAHEAD_METERS);
+    const cameraCenter = offsetLatLngByPixels(
+      map,
+      aheadPoint,
+      CAMERA_LEFT_OFFSET_PX,
+      0,
+      isVectorMap ? heading : 0
+    );
+
+    const vectorMap = map as google.maps.Map & {
+      moveCamera?: (cameraOptions: {
+        center: google.maps.LatLngLiteral;
+        heading: number;
+        tilt: number;
+        zoom: number;
+      }) => void;
+    };
+
+    if (isVectorMap && typeof vectorMap.moveCamera === 'function') {
+      vectorMap.moveCamera({
+        center: cameraCenter,
+        heading,
+        tilt: 60,
+        zoom,
+      });
+      return;
+    }
+
+    map.setCenter(cameraCenter);
+    map.setZoom(zoom);
+  }, []);
+
+  const searchNearbyPlaces = useCallback((
+    request: google.maps.places.PlaceSearchRequest
+  ) => {
+    const service = nearbyPlacesServiceRef.current;
+    if (!service) {
+      return Promise.resolve([] as google.maps.places.PlaceResult[]);
+    }
+
+    return new Promise<google.maps.places.PlaceResult[]>((resolve) => {
+      service.nearbySearch(request, (results, status) => {
+        if (
+          status === window.google.maps.places.PlacesServiceStatus.OK ||
+          status === window.google.maps.places.PlacesServiceStatus.ZERO_RESULTS
+        ) {
+          resolve(results ?? []);
+          return;
+        }
+
+        console.warn('[Nearby Alerts] Places search failed:', status, request);
+        resolve([]);
+      });
+    });
+  }, []);
+
+  const mapPlaceToAlert = useCallback((
+    place: google.maps.places.PlaceResult,
+    kind: NearbyAlertKind,
+    origin: google.maps.LatLngLiteral
+  ): NearbyAlertPlace | null => {
+    const location = place.geometry?.location;
+    if (!location) {
+      return null;
+    }
+
+    const lat = location.lat();
+    const lng = location.lng();
+
+    return {
+      id: place.place_id ?? `${kind}-${lat}-${lng}`,
+      kind,
+      name: place.name ?? (kind === 'police' ? 'Police Station' : 'Open Shop'),
+      position: { lat, lng },
+      distanceMeters: haversineM(origin.lat, origin.lng, lat, lng),
+      vicinity: place.vicinity,
+    };
+  }, []);
 
   // Keep ref in sync with state
   useEffect(() => { isFollowingRef.current = isFollowing; }, [isFollowing]);
@@ -62,99 +333,283 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
   useEffect(() => {
     if (navState?.isNavigating) {
       const map = internalMapRef.current;
-if (map) {
-  map.setZoom(18);
-  map.setTilt(60);
-}
+      if (map) {
+        map.setZoom(18);
+        if (supportsVectorCamera(map)) {
+          map.setTilt(60);
+        }
+      }
+      lastHeadingRef.current = normalizeHeading(navState.heading ?? 0);
+      targetNavPositionRef.current = null;
+      smoothedNavPositionRef.current = null;
+      setSmoothedNavPosition(null);
       setIsFollowing(true);
     } else {
       // Exit nav: restore flat map
       const map = internalMapRef.current;
-      if (map) {
+      if (map && supportsVectorCamera(map)) {
         map.setHeading(0);
         map.setTilt(0);
       }
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      targetNavPositionRef.current = null;
+      smoothedNavPositionRef.current = null;
+      setSmoothedNavPosition(null);
+      lastHeadingRef.current = 0;
     }
-  }, [navState?.isNavigating]);
+  }, [navState?.heading, navState?.isNavigating]);
 
   // ── Camera follow + rotation on every GPS update ─────────────────────────
  useEffect(() => {
-  if (!navState?.isNavigating) return;
-  if (navState.currentLat === null || navState.currentLng === null) return;
+  return;
+  if (navState?.currentLat === null || navState?.currentLng === null) return;
 
   const map = internalMapRef.current;
   if (!map) return;
 
-  const lat = navState.currentLat;
-  const lng = navState.currentLng;
-  const heading = navState.heading ?? 0;
+  const lat = navState?.currentLat ?? 0;
+  const lng = navState?.currentLng ?? 0;
+  const heading = navState?.heading ?? 0;
 
   // ── Smooth heading ─────────────────────────────
-  const smoothHeading =
-    lastHeadingRef.current * 0.7 + heading * 0.3;
+  const smoothHeading = smoothHeadingTransition(lastHeadingRef.current, heading, 0.3);
 
   lastHeadingRef.current = smoothHeading;
 
-  map.setHeading(smoothHeading);
-  map.setTilt(60);
+  if (!isFollowingRef.current) return;
+  const now = Date.now();
+  if (now - lastCameraUpdateRef.current < 75) return;
 
-  // ── Forward camera offset (CRITICAL) ───────────
-  const offsetDistance = 0.0004; // ~40–50 meters ahead
+  lastCameraUpdateRef.current = now;
+  updateFollowCamera(map as google.maps.Map, lat, lng, smoothHeading);
 
-  const rad = (smoothHeading * Math.PI) / 180;
-
-  const forwardLat = lat + offsetDistance * Math.cos(rad);
-  const forwardLng = lng + offsetDistance * Math.sin(rad);
-
-  if (isFollowingRef.current) {
-    map.panTo({ lat: forwardLat, lng: forwardLng });
-    map.setZoom(18);
-  }
 }, [
   navState?.currentLat,
   navState?.currentLng,
   navState?.heading,
-  navState?.isNavigating
+  navState?.isNavigating,
+  updateFollowCamera
 ]);
+
+  useEffect(() => {
+    if (!navState?.isNavigating || navState.currentLat == null || navState.currentLng == null) {
+      targetNavPositionRef.current = null;
+      smoothedNavPositionRef.current = null;
+      setSmoothedNavPosition(null);
+      return;
+    }
+
+    const nextTarget = {
+      lat: navState.currentLat,
+      lng: navState.currentLng,
+      heading: normalizeHeading(navState.heading ?? lastHeadingRef.current),
+    };
+
+    targetNavPositionRef.current = nextTarget;
+
+    if (!smoothedNavPositionRef.current) {
+      smoothedNavPositionRef.current = nextTarget;
+      lastHeadingRef.current = nextTarget.heading;
+      setSmoothedNavPosition(nextTarget);
+    }
+  }, [navState?.currentLat, navState?.currentLng, navState?.heading, navState?.isNavigating]);
+
+  useEffect(() => {
+    if (!navState?.isNavigating) {
+      return;
+    }
+
+    const animate = () => {
+      const current = smoothedNavPositionRef.current;
+      const target = targetNavPositionRef.current;
+
+      if (current && target) {
+        const next = {
+          lat: lerp(current.lat, target.lat, POSITION_SMOOTHING),
+          lng: lerp(current.lng, target.lng, POSITION_SMOOTHING),
+          heading: smoothHeadingTransition(current.heading, target.heading, HEADING_SMOOTHING),
+        };
+
+        if (Math.abs(next.lat - target.lat) < 0.000001) {
+          next.lat = target.lat;
+        }
+        if (Math.abs(next.lng - target.lng) < 0.000001) {
+          next.lng = target.lng;
+        }
+
+        const headingDelta = Math.abs(((target.heading - next.heading + 540) % 360) - 180);
+        if (headingDelta < 0.5) {
+          next.heading = target.heading;
+        }
+
+        smoothedNavPositionRef.current = next;
+        lastHeadingRef.current = next.heading;
+        setSmoothedNavPosition(next);
+
+        const map = internalMapRef.current;
+        if (map && isFollowingRef.current) {
+          updateFollowCamera(map, next.lat, next.lng, next.heading);
+        }
+      }
+
+      animationFrameRef.current = window.requestAnimationFrame(animate);
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [navState?.isNavigating, updateFollowCamera]);
   // ── Recenter handler ──────────────────────────────────────────────────────
   const handleRecenter = useCallback(() => {
     const map = internalMapRef.current;
     if (!map) return;
 
-    const lat = navState?.currentLat;
-    const lng = navState?.currentLng;
-    if (lat == null || lng == null) return;
+    const currentPosition = smoothedNavPositionRef.current ?? (
+      navState?.currentLat != null && navState?.currentLng != null
+        ? {
+            lat: navState.currentLat,
+            lng: navState.currentLng,
+            heading: normalizeHeading(navState?.heading ?? 0),
+          }
+        : null
+    );
+    if (!currentPosition) return;
 
     setIsFollowing(true);
-    const heading = navState?.heading ?? 0;
-const offsetDistance = 0.0004;
-
-const rad = (heading * Math.PI) / 180;
-
-const forwardLat = lat + offsetDistance * Math.cos(rad);
-const forwardLng = lng + offsetDistance * Math.sin(rad);
-
-map.panTo({ lat: forwardLat, lng: forwardLng });
-map.setZoom(18);
-map.setTilt(60);
-map.setHeading(heading);
-
-  }, [navState?.currentLat, navState?.currentLng, navState?.heading]);
+    lastHeadingRef.current = currentPosition.heading;
+    updateFollowCamera(
+      map,
+      currentPosition.lat,
+      currentPosition.lng,
+      currentPosition.heading
+    );
+  }, [navState?.currentLat, navState?.currentLng, navState?.heading, updateFollowCamera]);
 
   // ── Map lifecycle ─────────────────────────────────────────────────────────
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
     internalMapRef.current = map;
+    if (window.google.maps.places) {
+      nearbyPlacesServiceRef.current = new window.google.maps.places.PlacesService(map);
+    }
     if (externalMapRef) externalMapRef.current = map;
   }, [externalMapRef]);
 
   const onUnmount = useCallback(() => {
     setMap(null);
     internalMapRef.current = null;
+    nearbyPlacesServiceRef.current = null;
     if (externalMapRef) externalMapRef.current = null;
   }, [externalMapRef]);
 
+  // ── Traffic layer toggle ──────────────────────────────────────────────────
+  useEffect(() => {
+    const map = internalMapRef.current;
+    if (!map) return;
+
+    const trafficLayer = new window.google.maps.TrafficLayer();
+    if (store.showTraffic) {
+      trafficLayer.setMap(map);
+    } else {
+      trafficLayer.setMap(null);
+    }
+
+    // Cleanup: remove traffic layer on unmount
+    return () => {
+      trafficLayer.setMap(null);
+    };
+  }, [store.showTraffic]);
+
   // ── Directions / marker drag ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!showNearbyAlerts || !navState?.isNavigating || navState.currentLat == null || navState.currentLng == null) {
+      nearbyRequestIdRef.current += 1;
+      nearbyQueryMetaRef.current = null;
+      setNearbyAlerts([]);
+      return;
+    }
+
+    if (!nearbyPlacesServiceRef.current || !window.google.maps.places) {
+      return;
+    }
+
+    const origin = {
+      lat: navState.currentLat,
+      lng: navState.currentLng,
+    };
+    const now = Date.now();
+    const previousQuery = nearbyQueryMetaRef.current;
+
+    if (
+      previousQuery &&
+      haversineM(previousQuery.lat, previousQuery.lng, origin.lat, origin.lng) < NEARBY_ALERT_REFRESH_METERS &&
+      now - previousQuery.timestamp < NEARBY_ALERT_REFRESH_MS
+    ) {
+      return;
+    }
+
+    nearbyQueryMetaRef.current = {
+      lat: origin.lat,
+      lng: origin.lng,
+      timestamp: now,
+    };
+
+    const requestId = nearbyRequestIdRef.current + 1;
+    nearbyRequestIdRef.current = requestId;
+    const rankByDistance = window.google.maps.places.RankBy.DISTANCE;
+
+    Promise.all([
+      searchNearbyPlaces({
+        location: origin,
+        rankBy: rankByDistance,
+        type: 'police',
+      }),
+      searchNearbyPlaces({
+        location: origin,
+        radius: NEARBY_ALERT_RADIUS_METERS,
+        type: 'store',
+        openNow: true,
+      }),
+    ]).then(([policePlaces, shopPlaces]) => {
+      if (nearbyRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      const policeAlerts = policePlaces
+        .map((place) => mapPlaceToAlert(place, 'police', origin))
+        .filter(isNearbyAlertPlace)
+        .sort((a, b) => a.distanceMeters - b.distanceMeters)
+        .slice(0, 3);
+
+      const shopAlerts = shopPlaces
+        .map((place) => mapPlaceToAlert(place, 'shop', origin))
+        .filter(isNearbyAlertPlace)
+        .sort((a, b) => a.distanceMeters - b.distanceMeters)
+        .slice(0, 5);
+
+      const dedupedAlerts = [...policeAlerts, ...shopAlerts].filter((alert, index, alerts) =>
+        alerts.findIndex((candidate) => candidate.id === alert.id) === index
+      );
+
+      setNearbyAlerts(dedupedAlerts);
+    });
+  }, [
+    mapPlaceToAlert,
+    navState?.currentLat,
+    navState?.currentLng,
+    navState?.isNavigating,
+    searchNearbyPlaces,
+    showNearbyAlerts,
+  ]);
+
   const { fetchDirections } = useDirections();
 
   const handleMarkerDragEnd = useCallback((e: google.maps.MapMouseEvent, type: 'start' | 'end') => {
@@ -212,40 +667,20 @@ map.setHeading(heading);
           rotateControl: false,    // we manage rotation ourselves
         }}
       >
-        {/* Route: DirectionsRenderer (nav) or RoutePolylines (browsing) */}
-        {isNav && navState.navDirectionsResult ? (
-          <>
-            {/* Border layer — wider, darker, renders first (below) */}
-            <DirectionsRenderer
-              directions={navState.navDirectionsResult}
-              routeIndex={0}
-              options={{
-                suppressMarkers: true,
-                polylineOptions: {
-                  strokeColor: '#1a56c4',
-                  strokeWeight: 13,
-                  strokeOpacity: 0.85,
-                  zIndex: 8,
-                },
-              }}
-            />
-            {/* Fill layer — main blue, narrower, renders on top */}
-            <DirectionsRenderer
-              directions={navState.navDirectionsResult}
-              routeIndex={0}
-              options={{
-                suppressMarkers: true,
-                polylineOptions: {
-                  strokeColor: '#4285F4',
-                  strokeWeight: 7,
-                  strokeOpacity: 1,
-                  zIndex: 10,
-                },
-              }}
-            />
-          </>
-        ) : (
-          <RoutePolylines />
+        {!isNav && <RoutePolylines />}
+        {isNav && (
+          <RoutePolylines
+            isNavigating={true}
+            navDirectionsResult={navState?.navDirectionsResult ?? null}
+            progressDistanceMeters={navState?.progressDistanceMeters ?? null}
+            currentPosition={
+              smoothedNavPosition
+                ? { lat: smoothedNavPosition.lat, lng: smoothedNavPosition.lng }
+                : navState?.currentLat != null && navState?.currentLng != null
+                  ? { lat: navState.currentLat, lng: navState.currentLng }
+                  : null
+            }
+          />
         )}
 
         {/* --- DATABASES & OVERLAYS --- */}
@@ -297,6 +732,10 @@ map.setHeading(heading);
           />
         ))}
 
+        {isNav && showNearbyAlerts && nearbyAlerts.map((alert) => (
+          <NearbyAlertMarker key={alert.id} alert={alert} />
+        ))}
+
         {/* Coords Tooltip */}
         <AnimatePresence>
           {coordsTooltip && (
@@ -334,6 +773,7 @@ map.setHeading(heading);
                       </button>
                       <button 
                         onClick={() => setCoordsTooltip(null)}
+                        title="Close coordinates tooltip"
                         className="p-1.5 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition"
                       >
                         <X size={14} />
@@ -421,9 +861,13 @@ map.setHeading(heading);
         {!isNav && <SafetyInspector />}
 
         {/* Navigation arrow at user's GPS position */}
-        {isNav && navState.currentLat !== null && navState.currentLng !== null && (
+        {isNav && (smoothedNavPosition || (navState.currentLat !== null && navState.currentLng !== null)) && (
           <Marker
-            position={{ lat: navState.currentLat!, lng: navState.currentLng! }}
+            position={
+              smoothedNavPosition
+                ? { lat: smoothedNavPosition.lat, lng: smoothedNavPosition.lng }
+                : { lat: navState.currentLat!, lng: navState.currentLng! }
+            }
             zIndex={40}
             clickable={false}
             icon={{

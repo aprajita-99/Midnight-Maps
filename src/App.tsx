@@ -11,9 +11,11 @@ import StreetViewPanel from './components/Map/StreetViewPanel';
 import NavigationHUD from './components/UI/NavigationHUD';
 import GlobalSearch from './components/UI/GlobalSearch';
 import RouteMetricsOverlay from './components/UI/RouteMetricsOverlay';
+import TrafficToggle from './components/UI/TrafficToggle';
+import NearbyAlertsToggle from './components/UI/NearbyAlertsToggle';
 import { useUserLocation } from './hooks/useUserLocation';
 import { useStreetView } from './hooks/useStreetView';
-import { useNavigation } from './hooks/useNavigation';
+import { useNavigation } from './hooks/useNavigationController';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import TripSummaryModal from './components/UI/TripSummaryModal';
@@ -53,9 +55,9 @@ function App() {
     }
   }, [isLocationEnabled, userLocation, isNavigating]);
 
-  // Automatically close sidebar when navigation starts OR Street View opens
+  // Keep the sidebar visible during simulation and only collapse it for Street View.
   useEffect(() => {
-    if (isNavigating || svStatus === 'open') {
+    if (svStatus === 'open') {
       setIsSidebarOpen(false);
     }
   }, [isNavigating, svStatus]);
@@ -79,6 +81,7 @@ function App() {
         <div className="p-6 border-b border-white/5 relative">
           <button 
             onClick={() => setIsSidebarOpen(false)}
+            title="Close sidebar"
             className="absolute top-6 right-6 text-gray-400 hover:text-white transition"
           >
             <X size={24} />
@@ -100,22 +103,25 @@ function App() {
           mapRef={mapRef}
           navState={nav}
         />
-        {!isNavigating && (
-          <>
-            <ActionButtons />
-            <MapTypeToggle />
-            <LocationControl
-              {...locationHook}
-              onUseAsStart={() => setIsSidebarOpen(true)}
-            />
-          </>
-        )}
-        {/* Pegman — hidden during navigation or Street View */}
-        {svStatus !== 'open' && !isNavigating && (
-          <PegmanControl
-            mapRef={mapRef}
-            onDropCoords={handlePegmanDrop}
-          />
+        {svStatus !== 'open' && (
+          <div className="absolute top-6 right-6 z-20 flex flex-col gap-2 items-end">
+            {!isNavigating && <MapTypeToggle />}
+            {!isNavigating && <TrafficToggle />}
+            <NearbyAlertsToggle />
+            {!isNavigating && (
+              <LocationControl
+                {...locationHook}
+                onUseAsStart={() => setIsSidebarOpen(true)}
+              />
+            )}
+            {!isNavigating && (
+              <PegmanControl
+                mapRef={mapRef}
+                onDropCoords={handlePegmanDrop}
+              />
+            )}
+            {!isNavigating && <ActionButtons />}
+          </div>
         )}
         {/* Street View overlay */}
         <StreetViewPanel
@@ -128,6 +134,7 @@ function App() {
         <NavigationHUD nav={nav} />
         {!isNavigating && svStatus !== 'open' && <RouteMetricsOverlay />}
         
+        {/* Global Search Bar — replace the mini panel */}
         <AnimatePresence>
           {!isSidebarOpen && !isNavigating && svStatus !== 'open' && (
             <GlobalSearch 

@@ -40,63 +40,91 @@ export default function LocationControl({
   };
 
   return (
-    <div className="absolute bottom-28 right-6 z-20 flex flex-col items-end gap-3">
-      {/* Error toast */}
+    <div className="relative">
+      {/* Error toast — floats to the left of the button */}
       <AnimatePresence>
         {locationError && (
           <motion.div
             key="error"
-            initial={{ opacity: 0, x: 20, scale: 0.9 }}
+            initial={{ opacity: 0, x: 10, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 20, scale: 0.9 }}
-            className="max-w-[220px] bg-red-900/80 backdrop-blur-xl text-red-200 text-xs px-4 py-2.5 rounded-xl border border-red-500/30 shadow-xl text-right"
+            exit={{ opacity: 0, x: 10, scale: 0.9 }}
+            className="absolute right-[calc(100%+10px)] top-0 max-w-[200px] bg-red-900/80 backdrop-blur-xl text-red-200 text-xs px-3 py-2 rounded-xl border border-red-500/30 shadow-xl whitespace-nowrap"
           >
             {errorMessages[locationError]}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* "Use as Start" badge */}
+      {/* "Use as Start" badge — floats to the left of the button */}
       <AnimatePresence>
         {isLocationEnabled && userLocation && (
           <motion.button
             key="use-start"
-            initial={{ opacity: 0, x: 20, scale: 0.9 }}
+            initial={{ opacity: 0, x: 10, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 20, scale: 0.9 }}
+            exit={{ opacity: 0, x: 10, scale: 0.9 }}
             onClick={handleUseAsStart}
-            className="bg-dark-800/80 backdrop-blur-xl text-white text-xs font-semibold px-4 py-2.5 rounded-full border border-[#4285F4]/40 shadow-xl hover:bg-[#4285F4]/20 hover:border-[#4285F4]/60 transition-all flex items-center gap-2 whitespace-nowrap"
+            className="absolute right-[calc(100%+10px)] top-1 bg-dark-800/80 backdrop-blur-xl text-white text-xs font-semibold px-3 py-2 rounded-xl border border-[#4285F4]/40 shadow-xl hover:bg-[#4285F4]/20 hover:border-[#4285F4]/60 transition-all flex items-center gap-2 whitespace-nowrap"
           >
-            <span
-              className="w-2 h-2 rounded-full bg-[#4285F4] shadow-[0_0_6px_2px_rgba(66,133,244,0.6)]"
-            />
+            <span className="w-2 h-2 rounded-full bg-[#4285F4] shadow-[0_0_6px_2px_rgba(66,133,244,0.6)]" />
             Use as Start
           </motion.button>
         )}
       </AnimatePresence>
 
       {/* Main location button */}
-      <motion.button
-        whileHover={{ scale: 1.07 }}
-        whileTap={{ scale: 0.93 }}
-        onClick={toggleLocation}
-        title={isLocationEnabled ? 'Disable my location' : 'Show my location'}
-        className={[
-          'w-14 h-14 rounded-full flex items-center justify-center shadow-2xl border transition-all duration-300',
-          'backdrop-blur-xl',
-          isLocationEnabled
-            ? 'bg-[#4285F4]/20 border-[#4285F4]/60 text-[#4285F4] shadow-[0_0_20px_4px_rgba(66,133,244,0.25)]'
-            : 'bg-dark-800/80 border-white/10 text-gray-400 hover:text-white hover:border-white/20',
-        ].join(' ')}
-      >
-        {isLocating ? (
-          <Loader2 size={22} className="animate-spin text-[#4285F4]" />
-        ) : isLocationEnabled ? (
-          <LocateFixed size={22} />
-        ) : (
-          <LocateOff size={22} />
-        )}
-      </motion.button>
+      <div className="relative group">
+        <motion.button
+          whileHover={{ scale: 1.07 }}
+          whileTap={{ scale: 0.93 }}
+          onClick={toggleLocation}
+          aria-label={isLocationEnabled ? 'Disable my location' : 'Show my location'}
+          className="w-12 h-12 flex items-center justify-center rounded-2xl border shadow-lg backdrop-blur-xl overflow-hidden relative transition-all duration-300"
+          style={{
+            background: isLocationEnabled
+              ? 'rgba(66,133,244,0.18)'
+              : 'rgba(15,23,42,0.82)',
+            borderColor: isLocationEnabled
+              ? 'rgba(66,133,244,0.45)'
+              : 'rgba(255,255,255,0.1)',
+            boxShadow: isLocationEnabled
+              ? '0 0 0 1px rgba(66,133,244,0.3), 0 0 18px rgba(66,133,244,0.2), 0 4px 16px rgba(0,0,0,0.4)'
+              : '0 4px 16px rgba(0,0,0,0.35)',
+          }}
+        >
+          {/* Top shimmer */}
+          <div className="absolute top-0 left-2 right-2 h-px pointer-events-none"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent)' }} />
+
+          {isLocating ? (
+            <Loader2 size={20} className="animate-spin" style={{ color: '#60A5FA' }} />
+          ) : isLocationEnabled ? (
+            <LocateFixed size={20} style={{ color: '#60A5FA' }} />
+          ) : (
+            <LocateOff size={20} style={{ color: '#9CA3AF' }} />
+          )}
+        </motion.button>
+
+        {/* Tooltip */}
+        <div className="absolute right-0 top-[calc(100%+8px)] pointer-events-none opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 z-50">
+          <div className="relative rounded-xl px-3 py-2 whitespace-nowrap"
+            style={{
+              background: 'rgba(10,14,26,0.95)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(16px)',
+            }}>
+            <div className="absolute top-0 left-3 right-3 h-px rounded-full"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)' }} />
+            <p className="text-[11px] font-medium text-gray-300">
+              {isLocationEnabled ? 'Disable my location' : 'Show my location'}
+            </p>
+          </div>
+          <div className="absolute -top-[5px] right-4 w-2.5 h-2.5 rotate-45"
+            style={{ background: 'rgba(10,14,26,0.95)', borderTop: '1px solid rgba(255,255,255,0.1)', borderLeft: '1px solid rgba(255,255,255,0.1)' }} />
+        </div>
+      </div>
     </div>
   );
 }

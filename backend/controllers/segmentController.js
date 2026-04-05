@@ -28,6 +28,139 @@ const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
   return R * c; 
 };
 
+const clampUnitValue = (value, fallback = 0.5) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return fallback;
+
+  if (numericValue > 1 && numericValue <= 100) {
+    return Math.min(Math.max(numericValue / 100, 0), 1);
+  }
+
+  return Math.min(Math.max(numericValue, 0), 1);
+};
+
+const normalizeCameraValue = (value) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return 0;
+
+  if (numericValue <= 1) return clampUnitValue(numericValue, 0);
+  if (numericValue <= 5) return Math.min(Math.max(numericValue / 5, 0), 1);
+  if (numericValue <= 100) return Math.min(Math.max(numericValue / 100, 0), 1);
+
+  return 1;
+};
+
+const NIGHT_TIME_SLOTS = [0, 1, 2, 9, 10, 11];
+
+const getNormalizedProfileValue = (value, timeSlot, fallback = 0.5) => {
+  if (Array.isArray(value)) {
+    return clampUnitValue(value[timeSlot], fallback);
+  }
+
+  return clampUnitValue(value, fallback);
+};
+
+const getLightingRouteValue = (value, timeSlot) => {
+  if (!Array.isArray(value)) {
+    return clampUnitValue(value, 0.5);
+  }
+
+  const isDaySlot = timeSlot >= 3 && timeSlot < 9;
+  if (!isDaySlot) {
+    return clampUnitValue(value[timeSlot], 0.5);
+  }
+
+  const nightValues = NIGHT_TIME_SLOTS
+    .map((slot) => clampUnitValue(value[slot], 0.5))
+    .filter((slotValue) => Number.isFinite(slotValue));
+
+  if (!nightValues.length) {
+    return clampUnitValue(value[timeSlot], 0.5);
+  }
+
+  const totalNightLighting = nightValues.reduce((sum, slotValue) => sum + slotValue, 0);
+  return totalNightLighting / nightValues.length;
+};
+
+const collapseSegmentSamples = (segmentSamples) => {
+  return segmentSamples.reduce((collapsedSamples, sample) => {
+    if (!sample.segmentId) return collapsedSamples;
+
+    const previousSample = collapsedSamples[collapsedSamples.length - 1];
+    if (previousSample && previousSample.segmentId === sample.segmentId) {
+      previousSample.distance += sample.distance;
+      previousSample.weightedSafety += sample.weightedSafety;
+      previousSample.sampleCount += sample.sampleCount;
+      return collapsedSamples;
+    }
+
+    collapsedSamples.push({ ...sample });
+    return collapsedSamples;
+  }, []);
+};
+
+const buildFeedbackChunks = (segmentSamples) => {
+  const collapsedSamples = collapseSegmentSamples(segmentSamples);
+  if (collapsedSamples.length === 0) {
+    return [];
+  }
+
+  const chunkCount = collapsedSamples.length >= 5
+    ? 5
+    : collapsedSamples.length >= 4
+      ? 4
+      : collapsedSamples.length;
+
+  const totalDistance = collapsedSamples.reduce(
+    (sum, sample) => sum + sample.distance,
+    0
+  ) || collapsedSamples.length;
+  const targetChunkDistance = totalDistance / Math.max(chunkCount, 1);
+
+  const rawChunks = [];
+  let currentChunk = [];
+  let currentDistance = 0;
+
+  collapsedSamples.forEach((sample, index) => {
+    currentChunk.push(sample);
+    currentDistance += sample.distance;
+
+    const remainingSamples = collapsedSamples.length - index - 1;
+    const remainingChunks = chunkCount - rawChunks.length - 1;
+    const reachedTargetDistance = currentDistance >= targetChunkDistance;
+    const mustReserveRemainingSamples = remainingSamples >= remainingChunks;
+
+    if (rawChunks.length === chunkCount - 1) {
+      return;
+    }
+
+    if (reachedTargetDistance && mustReserveRemainingSamples) {
+      rawChunks.push(currentChunk);
+      currentChunk = [];
+      currentDistance = 0;
+    }
+  });
+
+  if (currentChunk.length > 0) {
+    rawChunks.push(currentChunk);
+  }
+
+  return rawChunks.map((chunkSamples, index) => {
+    const distance = chunkSamples.reduce((sum, sample) => sum + sample.distance, 0);
+    const weightedSafety = chunkSamples.reduce((sum, sample) => sum + sample.weightedSafety, 0);
+    const segmentIds = [...new Set(chunkSamples.map((sample) => sample.segmentId).filter(Boolean))];
+
+    return {
+      id: `part-${index + 1}`,
+      label: `Part ${index + 1}`,
+      distance,
+      segmentIds,
+      sampleCount: chunkSamples.reduce((sum, sample) => sum + sample.sampleCount, 0),
+      meanSafety: weightedSafety / (distance || 1),
+    };
+  }).filter((chunk) => chunk.segmentIds.length > 0);
+};
+
 exports.bulkInsertSegments = async (req, res, next) => {
   try {
     if (!Array.isArray(req.body)) return res.status(400).json({ success: false, message: 'Body must be an array' });
@@ -76,6 +209,7 @@ const findSegmentData = async (lat, lng, radius = 500) => {
   const scoredSegment = await ScoredSegment.findOne({ segment_id: roadSegment.segment_id });
 
   return {
+    segment_id: roadSegment.segment_id,
     features: roadSegment.features,
     scores: scoredSegment ? scoredSegment.scores : null
   };
@@ -83,15 +217,17 @@ const findSegmentData = async (lat, lng, radius = 500) => {
 
 exports.analyzeRoutes = async (req, res) => {
   try {
-    const { routes } = req.body;
+    const { routes, timeSlot: requestedTimeSlot } = req.body;
     if (!Array.isArray(routes)) return res.status(400).json({ success: false, message: 'Routes array required' });
 
-    const timeSlot = Math.floor(new Date().getHours() / 2);
+    const parsedTimeSlot = Number(requestedTimeSlot);
+    const timeSlot = Number.isInteger(parsedTimeSlot)
+      ? Math.min(Math.max(parsedTimeSlot, 0), 11)
+      : Math.floor(new Date().getHours() / 2);
     const analysisResults = [];
 
      await Promise.all(routes.map(async (route, routeIndex) => {
       const points = route.points;
-      const segmentScores = [];
 
      const sampleRate = points.length > 100 ? Math.ceil(points.length / 100) : 1;
       
@@ -114,7 +250,7 @@ exports.analyzeRoutes = async (req, res) => {
       let minScore = 1.0;
 
       let totalLighting = 0, totalActivity = 0, totalCamera = 0, totalEnvironment = 0;
-      let validFeatureCount = 0;
+      const matchedSegmentSamples = [];
 
      matchedSegments.forEach((data, index) => {
        const p1 = points[index * sampleRate];
@@ -132,23 +268,31 @@ exports.analyzeRoutes = async (req, res) => {
 
         if (currentSegmentSafety < minScore) minScore = currentSegmentSafety;
         if (currentSegmentSafety < 0.45) dangerousDistanceMeters += stepDistance;
+        if (data?.segment_id) {
+          matchedSegmentSamples.push({
+            segmentId: data.segment_id,
+            distance: stepDistance,
+            weightedSafety: currentSegmentSafety * stepDistance,
+            sampleCount: 1,
+          });
+        }
+
         if (data && data.features) {
           const f = data.features;
           
-          const lightingVal = Array.isArray(f.lighting) ? (f.lighting[timeSlot] ?? 0.5) : (f.lighting ?? 0.5);
-          const activityVal = Array.isArray(f.activity) ? (f.activity[timeSlot] ?? 0.5) : (f.activity ?? 0.5);
-          const cameraVal = Math.min((f.camera ?? 0) / 5, 1.0);
-          const envVal = f.environment ?? 0.5;
+          const lightingVal = getLightingRouteValue(f.lighting, timeSlot);
+          const activityVal = getNormalizedProfileValue(f.activity, timeSlot, 0.5);
+          const cameraVal = normalizeCameraValue(f.camera);
+          const envVal = clampUnitValue(f.environment, 0.5);
 
           totalLighting += (lightingVal * stepDistance);
           totalActivity += (activityVal * stepDistance);
           totalCamera += (cameraVal * stepDistance);
           totalEnvironment += (envVal * stepDistance);
-          
-          validFeatureCount++;
         }
       });
 let rawMeanSafety = weightedSafetySum / (totalRouteDistanceMeters || 1);
+      const feedbackChunks = buildFeedbackChunks(matchedSegmentSamples);
 
       let chokePointPenalty = 0;
       if (dangerousDistanceMeters > 150) {
@@ -165,6 +309,7 @@ let rawMeanSafety = weightedSafetySum / (totalRouteDistanceMeters || 1);
         minScore,
         distance: route.distance,
         duration: route.duration,
+        feedbackChunks,
        features: {
           lighting: totalLighting / (totalRouteDistanceMeters || 1),
           activity: totalActivity / (totalRouteDistanceMeters || 1),

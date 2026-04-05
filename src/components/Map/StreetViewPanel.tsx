@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertTriangle, Loader2, Shield, Activity, Sun, Camera } from 'lucide-react';
+import { X, AlertTriangle, Loader2, Shield, Activity, Sun, Camera, Star } from 'lucide-react';
 import type { UseStreetViewReturn } from '../../hooks/useStreetView';
+import SegmentRatingPanel from '../UI/SegmentRatingPanel';
 
 interface StreetViewPanelProps {
   svStatus: UseStreetViewReturn['svStatus'];
@@ -22,6 +23,7 @@ export default function StreetViewPanel({
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentSegment, setCurrentSegment] = useState<any>(null);
   const [hudStatus, setHudStatus] = useState<'loading' | 'ready' | 'no_data'>('loading');
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   // Calculates which of the 12 time slots corresponds to the user's current local time
   const getCurrentTimeSlot = () => {
@@ -165,9 +167,22 @@ export default function StreetViewPanel({
               className="pointer-events-auto absolute bottom-6 left-6 w-64 p-4 rounded-2xl bg-black/75 backdrop-blur-md border border-white/10 shadow-2xl text-white"
               id="safety-hud"
             >
-              <div className="flex items-center gap-2 mb-4">
-                <Shield size={18} className="text-blue-400" />
-                <h3 className="text-sm font-bold uppercase tracking-wider">Safety HUD</h3>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Shield size={18} className="text-blue-400" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider">Safety HUD</h3>
+                </div>
+                {hudStatus === 'ready' && currentSegment && (
+                  <motion.button
+                    onClick={() => setShowRatingModal(true)}
+                    className="pointer-events-auto p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                    title="Rate this street"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Star size={16} className="text-yellow-400" />
+                  </motion.button>
+                )}
               </div>
 
               {hudStatus === 'loading' ? (
@@ -213,6 +228,25 @@ export default function StreetViewPanel({
           </div>,
           document.body
         )}
+
+      {/* Rating Modal Portal */}
+      <AnimatePresence>
+        {showRatingModal && currentSegment && createPortal(
+          <SegmentRatingPanel
+            segment={currentSegment}
+            currentScore={Math.max(0.02, Math.min(0.98, (currentSegment.scores?.[getCurrentTimeSlot()] || 0.5) + (currentSegment.rl_modifier || 0)))}
+            timeSlot={getCurrentTimeSlot()}
+            onSubmit={() => {
+              // Refresh segment data after rating
+              if (svLocation) {
+                updateHUD(svLocation.lat, svLocation.lng);
+              }
+            }}
+            onClose={() => setShowRatingModal(false)}
+          />,
+          document.body
+        )}
+      </AnimatePresence>
     </>
   );
 }

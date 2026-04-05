@@ -1,4 +1,4 @@
-import { Search, Menu, Navigation } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 import LocationSearchInput from './LocationSearchInput';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { motion } from 'framer-motion';

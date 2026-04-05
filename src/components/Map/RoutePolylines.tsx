@@ -1,90 +1,119 @@
-import React, { useEffect, useRef } from 'react';
-import { useGoogleMap } from '@react-google-maps/api';
+import { Polyline } from '@react-google-maps/api';
 import { useNavigationStore } from '../../store/useNavigationStore';
+import { extractRoutePath, splitRoutePath, splitRoutePathByDistance } from '../../utils/routePath';
 
-export default function RoutePolylines() {
-  const map = useGoogleMap();
-  const { 
-    directionsResult, 
-    selectedRouteIndex, 
+interface RoutePolylinesProps {
+  isNavigating?: boolean;
+  navDirectionsResult?: google.maps.DirectionsResult | null;
+  currentPosition?: { lat: number; lng: number } | null;
+  progressDistanceMeters?: number | null;
+}
+
+function getRouteColor(
+  index: number,
+  shortestRouteIndex: number | null,
+  safestRouteIndex: number | null,
+  balancedRouteIndex: number | null
+) {
+  if (index === safestRouteIndex) return '#22C55E';
+  if (index === balancedRouteIndex) return '#A855F7';
+  if (index === shortestRouteIndex) return '#4285F4';
+  return '#38BDF8';
+}
+
+export default function RoutePolylines({
+  isNavigating = false,
+  navDirectionsResult = null,
+  currentPosition = null,
+  progressDistanceMeters = null,
+}: RoutePolylinesProps) {
+  const {
+    directionsResult,
+    selectedRouteIndex,
+    shortestRouteIndex,
+    safestRouteIndex,
+    balancedRouteIndex,
+  } = useNavigationStore();
+
+  if (isNavigating && navDirectionsResult?.routes[0]) {
+    const routeColor = getRouteColor(
+      selectedRouteIndex,
+      shortestRouteIndex,
+      safestRouteIndex,
+      balancedRouteIndex
+    );
+    const fullPath = extractRoutePath(navDirectionsResult.routes[0]);
+    const { traveled, remaining } =
+      progressDistanceMeters != null
+        ? splitRoutePathByDistance(fullPath, progressDistanceMeters)
+        : splitRoutePath(fullPath, currentPosition);
+
+    return (
+      <>
+        {traveled.length > 1 && (
+          <Polyline
+            path={traveled}
+            options={{
+              clickable: false,
+              strokeColor: '#6B7280',
+              strokeOpacity: 0.9,
+              strokeWeight: 6,
+              zIndex: 108,
+            }}
+          />
+        )}
+        {remaining.length > 1 && (
+          <Polyline
+            path={remaining}
+            options={{
+              clickable: false,
+              strokeColor: routeColor,
+              strokeOpacity: 1,
+              strokeWeight: 6,
+              zIndex: 109,
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (!directionsResult?.routes?.length) {
+    return null;
+  }
+
+  const routeCount = directionsResult.routes.length;
+  const activeRouteIndex = Math.min(selectedRouteIndex, Math.max(routeCount - 1, 0));
+  const activeRoute = directionsResult.routes[activeRouteIndex];
+
+  if (!activeRoute) {
+    return null;
+  }
+
+  const path = extractRoutePath(activeRoute);
+  const routeColor = getRouteColor(
+    activeRouteIndex,
     shortestRouteIndex,
     safestRouteIndex,
     balancedRouteIndex
-  } = useNavigationStore();
+  );
 
-  // 1. Hold strict references to the native Google Maps objects
-  const glowLineRef = useRef<google.maps.Polyline | null>(null);
-  const borderLineRef = useRef<google.maps.Polyline | null>(null);
-  const mainLineRef = useRef<google.maps.Polyline | null>(null);
+  if (path.length < 2) {
+    return null;
+  }
 
-  // 2. Initialize the polylines exactly ONCE when the map loads
-  useEffect(() => {
-    if (!map) return;
-
-    // Create the persistent lines directly on the canvas
-    glowLineRef.current = new window.google.maps.Polyline({ map, clickable: false });
-    borderLineRef.current = new window.google.maps.Polyline({ map, clickable: false });
-    mainLineRef.current = new window.google.maps.Polyline({ map, clickable: false });
-
-    // Ensure they are wiped if the component actually unmounts
-    return () => {
-      glowLineRef.current?.setMap(null);
-      borderLineRef.current?.setMap(null);
-      mainLineRef.current?.setMap(null);
-    };
-  }, [map]);
-
-  // 3. Update the coordinates dynamically when you change tabs
-  useEffect(() => {
-    if (!glowLineRef.current || !borderLineRef.current || !mainLineRef.current) return;
-
-    const currentRoute = directionsResult?.routes?.[selectedRouteIndex];
-    
-    // If there is no route, clear the paths off the screen immediately
-    if (!currentRoute) {
-      glowLineRef.current.setPath([]);
-      borderLineRef.current.setPath([]);
-      mainLineRef.current.setPath([]);
-      return;
-    }
-
-    const getRouteColor = (index: number) => {
-      if (index === safestRouteIndex)   return '#22C55E'; // Green
-      if (index === balancedRouteIndex) return '#A855F7'; // Purple
-      if (index === shortestRouteIndex) return '#4285F4'; // Blue
-      return '#4285F4'; 
-    };
-
-    const routeColor = getRouteColor(selectedRouteIndex);
-    const path = currentRoute.overview_path;
-
-    // Instantly morph the existing lines to the new route coordinates
-    glowLineRef.current.setOptions({
-      path: path,
-      strokeColor: routeColor,
-      strokeOpacity: 0.15,
-      strokeWeight: 18,
-      zIndex: 100,
-    });
-
-    borderLineRef.current.setOptions({
-      path: path,
-      strokeColor: '#000000',
-      strokeOpacity: 0.4,
-      strokeWeight: 11,
-      zIndex: 105,
-    });
-
-    mainLineRef.current.setOptions({
-      path: path,
-      strokeColor: routeColor,
-      strokeOpacity: 1,
-      strokeWeight: 7,
-      zIndex: 110,
-    });
-
-  }, [directionsResult, selectedRouteIndex, safestRouteIndex, balancedRouteIndex, shortestRouteIndex]);
-
-  // Return null because we are injecting straight into the Google Canvas, bypassing the React DOM
-  return null; 
+  return (
+    <>
+      <Polyline
+        path={path}
+        options={{
+          clickable: false,
+          strokeColor: routeColor,
+          strokeOpacity: 1,
+          strokeWeight: 6,
+          zIndex: 98,
+        }}
+      />
+    </>
+  );
 }

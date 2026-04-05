@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Marker, OverlayView, useGoogleMap } from '@react-google-maps/api';
-import { Shield, Activity, Lightbulb, Video, TreePine, Loader2, X, Star, MapPin } from 'lucide-react';
+import { Shield, Activity, Lightbulb, Video, TreePine, Loader2, X, Star } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigationStore } from '../../store/useNavigationStore';
@@ -15,7 +15,7 @@ export default function SafetyInspector() {
     const [isRatingComplete, setIsRatingComplete] = useState(false);
 
     // AI Feedback State
-    const { feedbackStatus, submitFeedback } = useNavigationStore();
+    const { submitFeedback } = useNavigationStore();
     const [hoveredStar, setHoveredStar] = useState(0);
     const [submittedRating, setSubmittedRating] = useState(0);
 

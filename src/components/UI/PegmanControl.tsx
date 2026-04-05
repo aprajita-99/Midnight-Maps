@@ -99,18 +99,20 @@ export default function PegmanControl({ mapRef, onDropCoords }: PegmanControlPro
 
   return (
     <>
-      {/* Hint tooltip — shown while dragging */}
+      {/* Hint tooltip — fixed to cursor while dragging */}
       <AnimatePresence>
-        {isDragging && (
+        {isDragging && createPortal(
           <motion.div
             key="hint"
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            className="absolute bottom-44 right-24 z-30 px-3 py-2 rounded-xl bg-dark-800/90 backdrop-blur-xl border border-white/10 text-xs text-gray-300 whitespace-nowrap shadow-xl pointer-events-none select-none"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed z-[99998] px-3 py-2 rounded-xl bg-dark-800/90 backdrop-blur-xl border border-white/10 text-xs text-gray-300 whitespace-nowrap shadow-xl pointer-events-none select-none"
+            style={{ left: cursorPos.x - 160, top: cursorPos.y - 48 }}
           >
             {isOverMap ? '📍 Release to open Street View' : 'Drag onto the map'}
-          </motion.div>
+          </motion.div>,
+          document.body
         )}
       </AnimatePresence>
 
@@ -122,17 +124,23 @@ export default function PegmanControl({ mapRef, onDropCoords }: PegmanControlPro
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         animate={isDragging ? { opacity: 0.35, scale: 0.9 } : { opacity: 1, scale: 1 }}
-        whileHover={isDragging ? {} : { scale: 1.1 }}
+        whileHover={isDragging ? {} : { scale: 1.07 }}
         title="Drag onto map to open Street View"
         className={[
-          'absolute bottom-44 right-6 z-20',
-          'w-14 h-14 rounded-full flex items-center justify-center select-none',
-          'bg-dark-800/80 backdrop-blur-xl border border-white/10 shadow-2xl',
-          'hover:border-[#4285F4]/40 hover:shadow-[0_0_20px_rgba(66,133,244,0.2)]',
-          'transition-colors',
+          'w-12 h-12 rounded-2xl flex items-center justify-center select-none',
+          'border shadow-lg backdrop-blur-xl overflow-hidden relative',
+          'transition-all duration-300',
           isDragging ? 'cursor-grabbing' : 'cursor-grab',
         ].join(' ')}
+        style={{
+          background: 'rgba(15,23,42,0.82)',
+          borderColor: 'rgba(255,255,255,0.1)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+        }}
       >
+        {/* Top shimmer */}
+        <div className="absolute top-0 left-2 right-2 h-px pointer-events-none"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent)' }} />
         <PegmanSVG />
       </motion.div>
 

@@ -3,8 +3,8 @@ import { useNavigationStore } from '../../store/useNavigationStore';
 import RouteCard from './RouteCard';
 import { Navigation, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { UseNavigationReturn } from '../../hooks/useNavigation';
-import RouteDetailsPanel from './RouteDetailsPanel';
+import type { UseNavigationReturn } from '../../hooks/useNavigationController';
+import RouteInsightsPanel from './RouteInsightsPanel';
 
 interface BottomPanelProps {
   nav: UseNavigationReturn;
@@ -19,12 +19,13 @@ export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
     startLocation,
     endLocation,
     isLoading,
-    error
+    error,
   } = useNavigationStore();
 
-  const { startNavigation } = nav;
+  const { startNavigation, isNavigating } = nav;
 
   const isReady = startLocation !== null && endLocation !== null;
+  const visibleRoutes = directionsResult?.routes.slice(0, 3) ?? [];
 
   return (
     <div className="flex flex-col gap-4 w-full pb-10">
@@ -56,7 +57,7 @@ export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
             animate={{ opacity: 1 }}
             className="flex flex-col gap-4"
           >
-            {directionsResult.routes.slice(0, 5).map((route, index) => (
+            {visibleRoutes.map((route, index) => (
               <React.Fragment key={`route-wrapper-${index}`}>
                 <RouteCard 
                   route={route} 
@@ -65,7 +66,7 @@ export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
                   onClick={() => setSelectedRouteIndex(index)} 
                 />
                 {/* ONLY show the detailed panel for the actively selected route */}
-                {selectedRouteIndex === index && <RouteDetailsPanel />}
+                {selectedRouteIndex === index && <RouteInsightsPanel />}
               </React.Fragment>
             ))}
           </motion.div>
@@ -74,8 +75,9 @@ export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
 
       {/* Start CTA (Only show when inputs are ready and routes are fetched) */}
       {isReady && directionsResult && !isLoading && (
-        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/10">
-          {/* Start Navigation */}
+        <div className="flex flex-col gap-4 mt-4 pt-4 border-t border-white/10">
+
+          {/* Start Navigation / Start Simulation */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -85,7 +87,9 @@ export default function BottomPanel({ nav, mapRef }: BottomPanelProps) {
             className="w-full py-4 bg-primary-green text-dark-900 rounded-2xl font-bold shadow-xl cursor-pointer flex justify-center items-center gap-2 hover:bg-primary-green/90 transition"
           >
             <Navigation size={20} fill="currentColor" />
-            Start Safe Navigation
+            {isNavigating
+              ? 'Navigation Active'
+              : 'Start Simulation'}
           </motion.div>
         </div>
       )}

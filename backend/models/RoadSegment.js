@@ -34,12 +34,12 @@ const RoadSegmentSchema = new mongoose.Schema({
   features: {
     activity: { 
       type: [Number], 
-      default: [0.5] * 12 
+      default: () => Array(12).fill(0.5),
     },
     activity_score: { type: Number },
     lighting: { 
       type: [Number], 
-      default: [0.0] * 12
+      default: () => Array(12).fill(0),
     },
     camera: { 
       type: Number, 

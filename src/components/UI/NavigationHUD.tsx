@@ -2,9 +2,9 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Navigation, ArrowLeft, ArrowRight, ArrowUp,
-  RotateCcw, AlertTriangle, Clock, Milestone,
+  RotateCcw, AlertTriangle, Clock, Milestone, Zap,
 } from 'lucide-react';
-import type { UseNavigationReturn } from '../../hooks/useNavigation';
+import type { UseNavigationReturn } from '../../hooks/useNavigationController';
 import { useNavigationStore } from '../../store/useNavigationStore';
 
 interface NavigationHUDProps {
@@ -30,16 +30,18 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
   const {
     isNavigating, steps, currentStepIndex,
     distanceToNext, remainingDuration, remainingDistance,
-    isOffRoute, stopNavigation,
+    isOffRoute,
   } = nav;
 
   // 1. Extract the remote control for our Trip Summary Modal
-  const { setShowTripSummary } = useNavigationStore();
+  const { setShowTripSummary, isSimulationRunning, showTripSummary } = useNavigationStore();
 
-  if (!isNavigating) return null;
+  if (!isNavigating || showTripSummary) return null;
 
-  const currentStep = steps[currentStepIndex];
-  const nextStep    = steps[currentStepIndex + 1];
+  const primaryStepIndex =
+    currentStepIndex < steps.length - 1 ? currentStepIndex + 1 : currentStepIndex;
+  const currentStep = steps[primaryStepIndex];
+  const nextStep = steps[primaryStepIndex + 1];
 
   // 2. The Intercept Function
   const handleEndNavigation = () => {
@@ -73,6 +75,19 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
             >
               <AlertTriangle size={16} />
               You seem to be off the route
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {isSimulationRunning && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mb-2 flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-green/20 border border-primary-green/30 backdrop-blur text-primary-green text-sm font-bold shadow-lg"
+            >
+              <Zap size={16} />
+              Simulation in progress
             </motion.div>
           )}
         </AnimatePresence>
@@ -137,7 +152,7 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
           {/* Step progress */}
           <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500">
             <Navigation size={12} className="text-primary-green" />
-            Step {currentStepIndex + 1} of {steps.length}
+            Step {Math.min(primaryStepIndex + 1, steps.length)} of {steps.length}
           </div>
 
           {/* 3. Updated End Navigation Button */}
