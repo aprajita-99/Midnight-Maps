@@ -8,13 +8,47 @@ const ALPHA = 0.2;
 const RETRAINING_THRESHOLD = 0.3; // Immediate retrain if error > 0.3
 
 /**
+ * Ensure documents have numeric types for fields we use with $inc
+ * This fixes the "Cannot apply $inc to non-numeric type (array)" error
+ */
+const ensureDataIntegrity = async () => {
+  try {
+    // 1. Check for non-numeric 'rating_count' (sometimes initialized as [] or null)
+    const corruptedRatingCount = await ScoredSegment.updateMany(
+      { rating_count: { $not: { $type: "number" } } },
+      { $set: { rating_count: 0 } }
+    );
+
+    if (corruptedRatingCount.modifiedCount > 0) {
+      console.log(`[DATA-FIX] 🛠️ Repaired ${corruptedRatingCount.modifiedCount} segments with non-numeric 'rating_count'.`);
+    }
+
+    // 2. Check for non-numeric 'rl_modifier'
+    const corruptedRLModifier = await ScoredSegment.updateMany(
+      { rl_modifier: { $not: { $type: "number" } } },
+      { $set: { rl_modifier: 0 } }
+    );
+
+    if (corruptedRLModifier.modifiedCount > 0) {
+      console.log(`[DATA-FIX] 🛠️ Repaired ${corruptedRLModifier.modifiedCount} segments with non-numeric 'rl_modifier'.`);
+    }
+  } catch (err) {
+    console.error("[DATA-FIX] ❌ Error during integrity check:", err);
+  }
+};
+
+/**
  * Main batch training loop
  * Processes pending feedback and updates segment safety scores
  */
 exports.runBatchTraining = async () => {
   console.log("[CRON] 🧠 AI Agent Waking Up: Starting RL Batch Training...");
 
+  // Force integrity check before training to prevent $inc failures
+  await ensureDataIntegrity();
+
   // 1. Fetch the inbox (up to 100 new ratings at a time)
+// ... (rest of function)
   const pendingLogs = await FeedbackLog.find({ is_processed: false }).limit(100);
   if (pendingLogs.length === 0) {
     console.log("[CRON] 💤 No new feedback. Going back to sleep.");

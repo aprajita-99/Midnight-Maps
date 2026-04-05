@@ -4,6 +4,7 @@ import { Shield, Activity, Lightbulb, Video, TreePine, Loader2, Star } from 'luc
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useGoogleMap } from '@react-google-maps/api';
+import { getTimeSlot } from '../../utils/timeUtils';
 import clsx from 'clsx';
 
 interface SafetyInspectorProps {
@@ -12,12 +13,12 @@ interface SafetyInspectorProps {
 
 export default function SafetyInspector({ isActive }: SafetyInspectorProps) {
     const map = useGoogleMap();
+    const { isDemoNightMode, submitFeedback } = useNavigationStore();
     const [position, setPosition] = useState<{ lat: number, lng: number } | null>(null);
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isRatingComplete, setIsRatingComplete] = useState(false);
 
-    const { submitFeedback } = useNavigationStore();
     const [hoveredStar, setHoveredStar] = useState(0);
     const [submittedRating, setSubmittedRating] = useState(0);
 
@@ -64,8 +65,7 @@ export default function SafetyInspector({ isActive }: SafetyInspectorProps) {
     const parseScore = (val: any, max: number = 1) => {
         let num = 0;
         if (Array.isArray(val)) {
-            const currentHour = new Date().getHours();
-            const slotIndex = Math.floor(currentHour / 2);
+            const slotIndex = getTimeSlot(isDemoNightMode);
             num = val.length > 0 ? val[slotIndex] : 0.5;
         } else {
             num = Number(val);

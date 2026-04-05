@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertTriangle, Loader2, Shield, Activity, Sun, Camera, Star } from 'lucide-react';
 import type { UseStreetViewReturn } from '../../hooks/useStreetView';
 import SegmentRatingPanel from '../UI/SegmentRatingPanel';
+import { getTimeSlot } from '../../utils/timeUtils';
+import { useNavigationStore } from '../../store/useNavigationStore';
 
 interface StreetViewPanelProps {
   svStatus: UseStreetViewReturn['svStatus'];
@@ -23,11 +25,11 @@ export default function StreetViewPanel({
   const [currentSegment, setCurrentSegment] = useState<any>(null);
   const [hudStatus, setHudStatus] = useState<'loading' | 'ready' | 'no_data'>('loading');
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const { isDemoNightMode } = useNavigationStore();
 
   // Calculates which of the 12 time slots corresponds to the user's current local time
   const getCurrentTimeSlot = () => {
-    const currentHour = new Date().getHours(); // Gets local hour (0-23)
-    return Math.floor(currentHour / 2); // Maps to index 0-11
+    return getTimeSlot(isDemoNightMode);
   };
 
   const updateHUD = useCallback(async (lat: number, lng: number) => {

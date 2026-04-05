@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getTimeSlot } from '../utils/timeUtils';
 
 export interface LocationInfo {
   address: string;
@@ -61,6 +62,14 @@ interface NavigationState {
   isSimulationRunning: boolean;
   simulationSpeed: number; // meters per second
 
+  // Demo features
+  isDemoNightMode: boolean;
+  setDemoNightMode: (v: boolean) => void;
+
+  // Onboarding
+  isReadmeOpen: boolean;
+  setReadmeOpen: (v: boolean) => void;
+
   isLoading: boolean;
   error: string | null;
   feedbackStatus: string | null;
@@ -96,7 +105,7 @@ interface NavigationState {
   setError: (error: string | null) => void;
 }
 
-export const useNavigationStore = create<NavigationState>((set) => ({
+export const useNavigationStore = create<NavigationState>((set, get) => ({
   startLocation: null,
   endLocation: null,
   mapType: 'roadmap',
@@ -121,6 +130,14 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   isSimulationMode: true,
   isSimulationRunning: false,
   simulationSpeed: 12, // 12 m/s default (~43 km/h)
+
+  // Demo features
+  isDemoNightMode: false,
+  setDemoNightMode: (v) => set({ isDemoNightMode: v }),
+
+  // Onboarding
+  isReadmeOpen: false,
+  setReadmeOpen: (v) => set({ isReadmeOpen: v }),
 
   isLoading: false,
   error: null,
@@ -154,7 +171,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   }),
   submitFeedback: async (type, targetId, rating) => {
     try {
-      const localTimeSlot = Math.floor(new Date().getHours() / 2);
+      const localTimeSlot = getTimeSlot(get().isDemoNightMode);
       const payload =
         type === 'segment'
           ? {
@@ -194,7 +211,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   },
   submitRouteChunkFeedback: async ({ chunks, safestChunkId, unsafeChunkId }) => {
     try {
-      const localTimeSlot = Math.floor(new Date().getHours() / 2);
+      const localTimeSlot = getTimeSlot(get().isDemoNightMode);
       const response = await fetch('/api/segments/rate-route-chunks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

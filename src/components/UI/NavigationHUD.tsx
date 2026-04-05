@@ -52,7 +52,7 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
         animate={{ y: 0,   opacity: 1 }}
         exit={{ y: -80,    opacity: 0 }}
         transition={{ type: 'spring', bounce: 0.2, duration: 0.5 }}
-        className="pointer-events-auto absolute top-0 left-0 right-0 mx-auto max-w-lg mt-6 px-6"
+        className="pointer-events-auto absolute top-0 left-0 right-0 mx-auto max-w-md mt-6 px-6"
       >
         {/* Off-route banner */}
         <AnimatePresence>
@@ -73,16 +73,16 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
         <div className="bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
           {/* Main instruction row */}
           {currentStep && (
-            <div className="flex items-center gap-4 px-5 py-4">
-              <div className="w-14 h-14 rounded-full bg-primary-green flex items-center justify-center flex-shrink-0 shadow-lg">
+            <div className="flex items-center gap-3.5 px-4 py-3.5">
+              <div className="w-11 h-11 rounded-full bg-primary-green flex items-center justify-center flex-shrink-0 shadow-lg">
                 <ManeuverIcon maneuver={currentStep.maneuver} />
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="text-3xl font-black text-white leading-none">
+                <p className="text-2xl font-black text-white leading-none">
                   {distanceToNext}
                 </p>
-                <p className="text-sm text-gray-300 mt-1 leading-snug line-clamp-2">
+                <p className="text-[13px] text-gray-300 mt-1 leading-snug line-clamp-2 italic">
                   {stripHtml(currentStep.instructions)}
                 </p>
               </div>
@@ -91,13 +91,15 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
 
           {/* Next step preview */}
           {nextStep && (
-            <div className="flex items-center gap-3 px-5 py-2.5 bg-white/5 border-t border-white/10">
-              <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Then</span>
-              <ManeuverIcon maneuver={nextStep.maneuver} />
-              <span className="text-xs text-gray-300 truncate flex-1">
+            <div className="flex items-center gap-2.5 px-4 py-2 bg-white/5 border-t border-white/10">
+              <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Then</span>
+              <div className="w-5 h-5 flex items-center justify-center grayscale opacity-80 scale-75">
+                <ManeuverIcon maneuver={nextStep.maneuver} />
+              </div>
+              <span className="text-[11px] text-gray-400 truncate flex-1">
                 {stripHtml(nextStep.instructions)}
               </span>
-              <span className="text-xs text-gray-400 flex-shrink-0">{nextStep.distance}</span>
+              <span className="text-[11px] text-gray-500 flex-shrink-0 font-medium">{nextStep.distance}</span>
             </div>
           )}
         </div>

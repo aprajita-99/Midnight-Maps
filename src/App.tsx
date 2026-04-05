@@ -15,6 +15,7 @@ import TrafficToggle from './components/UI/TrafficToggle';
 import NearbyAlertsToggle from './components/UI/NearbyAlertsToggle';
 import CameraToggle from './components/UI/CameraToggle';
 import LampToggle from './components/UI/LampToggle';
+import TimeModeToggle from './components/UI/TimeModeToggle';
 import { useUserLocation } from './hooks/useUserLocation';
 import { useStreetView } from './hooks/useStreetView';
 import { useNavigation } from './hooks/useNavigationController';
@@ -22,6 +23,8 @@ import { useNavigationStore } from './store/useNavigationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Navigation } from 'lucide-react';
 import TripSummaryModal from './components/UI/TripSummaryModal';
+import ReadmeToggle from './components/UI/ReadmeToggle';
+import ReadmeSidebar from './components/UI/ReadmeSidebar';
 
 const DUMMY_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 type Library = 'places' | 'drawing' | 'geometry' | 'visualization';
@@ -193,7 +196,20 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* ── Hackathon Disclaimer Footer ────────────────────────────── */}
+          <div className="mt-auto px-6 py-4 flex-shrink-0"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.055)' }}>
+            <p className="text-[10px] text-gray-500 leading-normal text-center italic font-medium opacity-80 uppercase tracking-widest leading-relaxed">
+              Some options are for demonstration purpose only for hackathon and won't be present in actual product
+            </p>
+          </div>
         </aside>
+
+        {/* Readme Sidebar Overlay */}
+        <AnimatePresence>
+          <ReadmeSidebar />
+        </AnimatePresence>
 
         {/* ── Map Frame ──────────────────────────────────────────────────────── */}
         <div className="flex-1 min-w-0 min-h-0 p-6">
@@ -214,11 +230,13 @@ function App() {
             {/* ── Map Controls Column (top-right inside frame) ── */}
             {svStatus !== 'open' && (
               <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 items-end">
+                <ReadmeToggle />
                 {!isNavigating && <MapTypeToggle />}
                 {!isNavigating && <TrafficToggle />}
                 <NearbyAlertsToggle />
                 <CameraToggle />
                 <LampToggle />
+                <TimeModeToggle />
                 {!isNavigating && (
                   <LocationControl
                     {...locationHook}

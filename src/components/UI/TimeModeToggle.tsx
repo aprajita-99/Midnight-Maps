@@ -1,9 +1,9 @@
-import { Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { motion } from 'framer-motion';
 
-export default function LampToggle() {
-  const { showLamps, setShowLamps } = useNavigationStore();
+export default function TimeModeToggle() {
+  const { isDemoNightMode, setDemoNightMode } = useNavigationStore();
 
   return (
     <motion.div
@@ -14,18 +14,18 @@ export default function LampToggle() {
       <motion.button
         whileHover={{ scale: 1.07 }}
         whileTap={{ scale: 0.93 }}
-        onClick={() => setShowLamps(!showLamps)}
-        aria-label={showLamps ? 'Hide street lamps' : 'Show street lamps'}
+        onClick={() => setDemoNightMode(!isDemoNightMode)}
+        aria-label={isDemoNightMode ? 'Switch to Day Mode' : 'Switch to Night Mode'}
         className="w-12 h-12 flex items-center justify-center rounded-2xl border shadow-lg backdrop-blur-xl overflow-hidden relative transition-all duration-300"
         style={{
-          background: showLamps
-            ? 'rgba(234,179,8,0.18)'
+          background: isDemoNightMode
+            ? 'rgba(99,102,241,0.22)'
             : 'rgba(15,23,42,0.82)',
-          borderColor: showLamps
-            ? 'rgba(234,179,8,0.45)'
+          borderColor: isDemoNightMode
+            ? 'rgba(99,102,241,0.5)'
             : 'rgba(255,255,255,0.1)',
-          boxShadow: showLamps
-            ? '0 0 0 1px rgba(234,179,8,0.3), 0 0 18px rgba(234,179,8,0.15), 0 4px 16px rgba(0,0,0,0.4)'
+          boxShadow: isDemoNightMode
+            ? '0 0 0 1px rgba(99,102,241,0.35), 0 0 20px rgba(99,102,241,0.2), 0 4px 16px rgba(0,0,0,0.45)'
             : '0 4px 16px rgba(0,0,0,0.35)',
         }}
       >
@@ -34,16 +34,13 @@ export default function LampToggle() {
           style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent)' }} />
 
         <motion.div
-          animate={{ scale: showLamps ? 1 : 0.9 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+          animate={{ rotate: isDemoNightMode ? 360 : 0 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
         >
-          <Sun 
-            size={20} 
-            style={{ 
-              color: showLamps ? '#FDE047' : '#9CA3AF',
-              opacity: showLamps ? 1 : 0.5
-            }} 
-          />
+          {isDemoNightMode
+            ? <Moon size={20} fill="currentColor" style={{ color: '#818cf8' }} />
+            : <Sun size={20} style={{ color: '#9CA3AF' }} />
+          }
         </motion.div>
       </motion.button>
 
@@ -59,7 +56,10 @@ export default function LampToggle() {
           <div className="absolute top-0 left-3 right-3 h-px rounded-full"
             style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)' }} />
           <p className="text-[11px] font-medium text-gray-300">
-            {showLamps ? 'Hide street lamps' : 'Show street lamps'}
+            {isDemoNightMode ? 'Switch to Auto Time' : 'Switch to Midnight Demo'}
+          </p>
+          <p className="text-[9px] text-gray-500 mt-0.5 tracking-tight font-bold uppercase">
+            {isDemoNightMode ? 'Syncing with Clock' : 'Forcing Midnight Slot'}
           </p>
         </div>
         {/* Caret pointing right */}

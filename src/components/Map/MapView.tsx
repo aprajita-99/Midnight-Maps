@@ -7,6 +7,7 @@ import clsx from 'clsx';
 import RoutePolylines from './RoutePolylines.tsx';
 import { useNavigationStore } from '../../store/useNavigationStore.ts';
 import { useDirections } from '../../hooks/useDirections.ts';
+import { DARK_MAP_STYLE } from '../../constants/mapStyles.ts';
 import type { UserLocation } from '../../hooks/useUserLocation.ts';
 import type { NavState } from '../../hooks/useNavigationController.ts';
 import SafetyInspector from './SafetyInspector';
@@ -227,7 +228,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
   const store = useNavigationStore();
   
   // Grab the toggle states from our Zustand store
-  const { showCameras, showLamps, showPolice, showNearbyAlerts } = store;
+  const { showCameras, showLamps, showPolice, showNearbyAlerts, isDemoNightMode } = store;
 
   const [, setMap] = useState<google.maps.Map | null>(null);
   const internalMapRef = useRef<google.maps.Map | null>(null);
@@ -684,6 +685,7 @@ export default function MapView({ userLocation, isLocationEnabled, mapRef: exter
           clickableIcons: false,
           disableDoubleClickZoom: true, // Disable zoom to focus on tooltip
           rotateControl: false,    // we manage rotation ourselves
+          styles: isDemoNightMode ? DARK_MAP_STYLE : [],
         }}
       >
         {!isNav && <RoutePolylines />}

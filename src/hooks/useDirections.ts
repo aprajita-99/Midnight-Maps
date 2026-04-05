@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigationStore } from '../store/useNavigationStore';
+import { getTimeSlot } from '../utils/timeUtils';
 
 const ERROR_MESSAGES: Record<string, string> = {
   NOT_FOUND:              'One or more locations could not be found. Try searching again.',
@@ -52,7 +53,8 @@ export function useDirections() {
       setError(null);
     }
 
-    const localTimeSlot = Math.floor(new Date().getHours() / 2);
+    const store = useNavigationStore.getState();
+    const localTimeSlot = getTimeSlot(store.isDemoNightMode);
 
     const directionsService = new window.google.maps.DirectionsService();
 
