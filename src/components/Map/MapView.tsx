@@ -175,36 +175,44 @@ function NearbyAlertMarker({ alert }: { alert: NearbyAlertPlace }) {
     >
       <div
         title={`${alert.name} • ${Math.round(alert.distanceMeters)} m`}
-        className="relative -translate-x-1/2 -translate-y-[calc(100%+6px)] pointer-events-none"
+        className="relative -translate-x-1/2 -translate-y-[calc(100%+12px)] pointer-events-none"
       >
-        {/* Pulsing beacon behind icon — slightly smaller */}
+        {/* Pulsing beacon behind icon */}
         <motion.div
           animate={{
-            scale: [1, 2, 1],
-            opacity: [0.35, 0, 0.35],
+            scale: [1, 2.2, 1],
+            opacity: [0.4, 0, 0.4],
           }}
           transition={{
-            duration: 2.0,
+            duration: 2.2,
             repeat: Infinity,
             ease: 'easeInOut',
           }}
           className={clsx(
-            "absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full",
-            isPolice ? "bg-red-500/30" : "bg-primary-green/30"
+            "absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full",
+            isPolice ? "bg-red-500/35" : "bg-primary-green/35"
           )}
         />
         
-        {/* The Badge — more compact padding and text */}
+        {/* The Badge — Improved visibility and padding */}
         <div className={clsx(
-          "relative flex items-center gap-1.5 rounded-full border px-2.5 py-1 shadow-xl backdrop-blur-md transition-all duration-300",
+          "relative flex items-center gap-2 rounded-2xl border px-3.5 py-1.5 shadow-2xl backdrop-blur-xl transition-all duration-300",
           isPolice 
-            ? "bg-red-600/85 border-red-300/40 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]" 
-            : "bg-emerald-600/85 border-emerald-300/40 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+            ? "bg-red-600/95 border-red-300/50 text-white shadow-[0_8px_20px_rgba(239,68,68,0.4)]" 
+            : "bg-emerald-600/95 border-emerald-300/50 text-white shadow-[0_8px_20px_rgba(16,185,129,0.4)]"
         )}>
-          <Icon size={11} strokeWidth={3} className="text-white shrink-0" />
-          <span className="text-[9px] font-black uppercase tracking-wide whitespace-nowrap leading-none">
+          <Icon size={13} strokeWidth={3} className="text-white shrink-0" />
+          <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap leading-none">
             {label}
           </span>
+          
+          {/* Tip / Arrow pointing down to location */}
+          <div className={clsx(
+            "absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 border-r border-b",
+            isPolice 
+              ? "bg-red-600/95 border-red-300/50" 
+              : "bg-emerald-600/95 border-emerald-300/50"
+          )} />
         </div>
       </div>
     </OverlayView>

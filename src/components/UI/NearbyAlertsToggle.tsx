@@ -170,8 +170,12 @@ export default function NearbyAlertsToggle() {
           </div>
 
           {/* Status blurb */}
-          <p className="mt-1.5 text-[10px] text-gray-500 text-center tracking-wide">
-            {showNearbyAlerts ? '● Showing nearby alerts' : 'Tap to show nearby alerts'}
+          <p className="mt-1.5 text-[10px] text-gray-400 text-center tracking-wide font-bold uppercase">
+            {showNearbyAlerts ? 'Showing nearby alerts' : 'Tap to show nearby alerts'}
+          </p>
+          <div className="mt-1.5 h-px bg-white/5 mx-auto w-12" />
+          <p className="mt-1.5 text-[8px] text-gray-500 text-center uppercase tracking-widest font-black">
+            Works in Navigation & Simulation
           </p>
         </div>
 

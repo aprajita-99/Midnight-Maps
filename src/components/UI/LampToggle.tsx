@@ -61,6 +61,9 @@ export default function LampToggle() {
           <p className="text-[11px] font-medium text-gray-300">
             {showLamps ? 'Hide street lamps' : 'Show street lamps'}
           </p>
+          <p className="text-[9px] text-gray-500 mt-0.5 tracking-tight font-bold uppercase">
+            Active in Navigation & Simulation
+          </p>
         </div>
         {/* Caret pointing right */}
         <div className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 rotate-45"
