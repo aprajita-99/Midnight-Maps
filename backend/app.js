@@ -12,6 +12,7 @@ app.use(cors({
     "http://localhost:5173",
     "https://midnight-maps.vercel.app/"
   ],
+  methods:["GET","POST","PUT","DELETE"],
   credentials:true
 }));
 
