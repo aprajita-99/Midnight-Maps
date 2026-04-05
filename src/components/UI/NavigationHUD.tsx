@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Navigation, ArrowLeft, ArrowRight, ArrowUp,
-  RotateCcw, AlertTriangle, Clock, Milestone, Zap,
+  RotateCcw, AlertTriangle, Clock, Milestone,
 } from 'lucide-react';
 import type { UseNavigationReturn } from '../../hooks/useNavigationController';
+import { stripHtml } from '../../utils/routePath';
 import { useNavigationStore } from '../../store/useNavigationStore';
 
 interface NavigationHUDProps {
@@ -11,9 +12,7 @@ interface NavigationHUDProps {
 }
 
 // Strip HTML tags from Google's instruction strings
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-}
+
 
 // Map Google maneuver strings → Lucide icons
 function ManeuverIcon({ maneuver }: { maneuver: string }) {
@@ -32,7 +31,7 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
     isOffRoute,
   } = nav;
 
-  const { setShowTripSummary, isSimulationRunning, showTripSummary } = useNavigationStore();
+  const { setShowTripSummary, showTripSummary } = useNavigationStore();
 
   if (!isNavigating || showTripSummary) return null;
 
@@ -69,19 +68,7 @@ export default function NavigationHUD({ nav }: NavigationHUDProps) {
             </motion.div>
           )}
         </AnimatePresence>
-        <AnimatePresence>
-          {isSimulationRunning && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="mb-3 flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-green/20 border border-primary-green/30 backdrop-blur text-primary-green text-sm font-bold shadow-lg"
-            >
-              <Zap size={16} />
-              Simulation in progress
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Simulation indicator removed per user request */}
 
         <div className="bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
           {/* Main instruction row */}

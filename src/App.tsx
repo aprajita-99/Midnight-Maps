@@ -13,6 +13,8 @@ import NavigationHUD from './components/UI/NavigationHUD';
 import RouteMetricsOverlay from './components/UI/RouteMetricsOverlay';
 import TrafficToggle from './components/UI/TrafficToggle';
 import NearbyAlertsToggle from './components/UI/NearbyAlertsToggle';
+import CameraToggle from './components/UI/CameraToggle';
+import LampToggle from './components/UI/LampToggle';
 import { useUserLocation } from './hooks/useUserLocation';
 import { useStreetView } from './hooks/useStreetView';
 import { useNavigation } from './hooks/useNavigationController';
@@ -215,10 +217,12 @@ function App() {
                 {!isNavigating && <MapTypeToggle />}
                 {!isNavigating && <TrafficToggle />}
                 <NearbyAlertsToggle />
+                <CameraToggle />
+                <LampToggle />
                 {!isNavigating && (
                   <LocationControl
                     {...locationHook}
-                    onUseAsStart={() => {}}
+                    onUseAsStart={() => { }}
                   />
                 )}
                 {!isNavigating && (

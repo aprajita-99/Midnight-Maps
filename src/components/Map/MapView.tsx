@@ -29,8 +29,8 @@ const center = {
 };
 const CAMERA_LOOKAHEAD_METERS = 35;
 const CAMERA_LEFT_OFFSET_PX = 100;
-const POSITION_SMOOTHING = 0.2;
-const HEADING_SMOOTHING = 0.18;
+const POSITION_SMOOTHING = 0.3;     // Snappier but still fluid
+const HEADING_SMOOTHING = 0.22;    // Tighter rotation smoothing
 const NEARBY_ALERT_RADIUS_METERS = 200;
 const NEARBY_ALERT_REFRESH_METERS = 80;
 const NEARBY_ALERT_REFRESH_MS = 6000;

@@ -4,6 +4,7 @@ import { AlertTriangle, ShieldCheck, Star, X } from 'lucide-react';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import clsx from 'clsx';
 import type { UseNavigationReturn } from '../../hooks/useNavigationController';
+import { stripHtml } from '../../utils/routePath';
 
 interface TripSummaryModalProps {
   nav: UseNavigationReturn;
@@ -33,10 +34,54 @@ export default function TripSummaryModal({ nav }: TripSummaryModalProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const analysis = routeAnalysis?.[selectedRouteIndex] ?? null;
-  const feedbackChunks = useMemo(
-    () => analysis?.feedbackChunks?.filter((chunk) => chunk.segmentIds.length > 0) ?? [],
-    [analysis]
-  );
+  
+  const feedbackChunks = useMemo(() => {
+    const rawChunks = analysis?.feedbackChunks?.filter((chunk) => chunk.segmentIds.length > 0) ?? [];
+    const steps = nav.steps || [];
+    
+    if (steps.length === 0 || rawChunks.length === 0) return rawChunks;
+
+    // Calculate step boundaries based on cumulative distance
+    let stepAcc = 0;
+    const stepBoundaries = steps.map(s => {
+      const start = stepAcc;
+      stepAcc += s.distanceValue;
+      return { start, end: stepAcc, text: stripHtml(s.instructions) };
+    });
+
+    let chunkAcc = 0;
+    return rawChunks.map((chunk, idx) => {
+      const startDist = chunkAcc;
+      chunkAcc += chunk.distance;
+      const midDist = startDist + chunk.distance / 2;
+
+      // Map chunk midpoint to a turn step
+      const stepIdx = stepBoundaries.findIndex(b => midDist >= b.start && midDist <= b.end);
+      let newLabel = chunk.label;
+
+      if (idx === 0) {
+        newLabel = "Near start of trip";
+      } else if (idx === rawChunks.length - 1) {
+        newLabel = "Near destination";
+      } else if (stepIdx !== -1) {
+        const nextStep = stepBoundaries[stepIdx + 1];
+        if (nextStep) {
+          // Format: "Before [Instructions]"
+          const instruction = nextStep.text;
+          const cleaned = instruction
+            .replace(/^Turn (left|right)/i, (m) => m.replace("Turn", "turning"))
+            .replace(/^Head/i, "heading")
+            .replace(/^Continue/i, "continuing");
+          
+          newLabel = `Before ${cleaned}`;
+        } else {
+          newLabel = `Along ${stepBoundaries[stepIdx].text}`;
+        }
+      }
+
+      return { ...chunk, label: newLabel };
+    });
+  }, [analysis, nav.steps]);
 
   if (!showTripSummary) return null;
 

@@ -120,7 +120,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
   // Navigation modes
   isSimulationMode: true,
   isSimulationRunning: false,
-  simulationSpeed: 20, // 20 m/s default
+  simulationSpeed: 12, // 12 m/s default (~43 km/h)
 
   isLoading: false,
   error: null,

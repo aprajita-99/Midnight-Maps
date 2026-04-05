@@ -273,7 +273,7 @@ function fetchNavDirections(
 const REROUTE_DIST_M = 100;
 const REROUTE_DEBOUNCE_MS = 15_000;
 const STEP_COMPLETE_BUFFER_M = 10;
-const SIMULATION_TICK_MS = 16;
+const SIMULATION_TICK_MS = 50;
 
 const INITIAL: NavState = {
   isNavigating: false,
@@ -325,6 +325,15 @@ export function useNavigation(): UseNavigationReturn {
     }
 
     clearSimulation();
+    
+    // Partially reset local state to unmount Nav UI from map
+    setState(previous => ({
+      ...previous,
+      isNavigating: false,
+      currentStepIndex: 0,
+      progressDistanceMeters: 0,
+    }));
+
     useNavigationStore.setState({ showTripSummary: true });
   }, [clearSimulation]);
 
