@@ -58,8 +58,14 @@ export default function RouteInsightsPanel() {
     environment: 0,
   };
 
+  // --- SCORING CONSTANTS (Matched with Backend) ---
+  const NIGHT_WEIGHTS = { LIGHTING: 0.40, ACTIVITY: 0.25, ENVIRONMENT: 0.20, CAMERA: 0.15 };
+  const DAY_WEIGHTS = { LIGHTING: 0.50, ACTIVITY: 0.10, ENVIRONMENT: 0.30, CAMERA: 0.10 };
+
   // --- NEW LOGIC START ---
   const currentHour = new Date().getHours();
+  const timeSlot = isDemoNightMode ? 0 : Math.floor(currentHour / 2);
+
   // It is daytime if we are NOT in demo night mode, and the hour is between 6 AM and 6 PM.
   const isDaytime = !isDemoNightMode && (currentHour >= 6 && currentHour < 18);
   
@@ -68,10 +74,33 @@ export default function RouteInsightsPanel() {
   
   // 2. Boost camera coverage by 35% everywhere to account for wide-angle views, cap at 100%
   const finalCamera = Math.min(1.0, features.camera * 1.35);
-  // --- NEW LOGIC END ---
 
-  const safetyScore = Math.round((analysis.meanSafety ?? 0) * 100);
-  const riskScore = Math.round((analysis.risk ?? 0) * 100);
+  // 3. Local Dynamic Safety Calculation (Instant update on toggle)
+  const activeWeights = isDaytime ? DAY_WEIGHTS : NIGHT_WEIGHTS;
+  
+  let baseScore = (finalLighting * activeWeights.LIGHTING) + 
+                  (features.activity * activeWeights.ACTIVITY) + 
+                  (features.environment * activeWeights.ENVIRONMENT) + 
+                  (finalCamera * activeWeights.CAMERA);
+
+  // Apply "Dark and Deserted" Penalty
+  if (finalLighting < 0.3 && features.activity < 0.3) {
+    baseScore *= 0.70; 
+  } else if (finalLighting < 0.3) {
+    baseScore *= 0.85;
+  }
+
+  // Late Night Cap (00:00 - 04:00)
+  if ((timeSlot === 0 || timeSlot === 1) && baseScore > 0.90) {
+    baseScore = 0.90;
+  }
+
+  // Apply Scoring Curve (Matching backend segmentController.js:302)
+  const finalSafetyValue = Math.min(0.98, Math.max(0.05, (0.35 + (baseScore * 0.65))));
+  
+  const safetyScore = Math.round(finalSafetyValue * 100);
+  const riskScore = 100 - safetyScore;
+  // --- NEW LOGIC END ---
 
   const renderProgressBar = (label: string, icon: ReactNode, value: number) => {
     const percentage = Math.round(value * 100);
