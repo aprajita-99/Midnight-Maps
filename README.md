@@ -1,6 +1,6 @@
-<div align="center">
 
-# 🌙 Fear-Free Night Navigator
+
+# Midnight Maps
 ### *Midnight Maps — AI-Powered Safety Navigation for the Night*
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
@@ -9,40 +9,29 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://mongodb.com/)
 [![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![Google Maps](https://img.shields.io/badge/Google%20Maps-API-4285F4?style=for-the-badge&logo=google-maps&logoColor=white)](https://developers.google.com/maps)
+[![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![ResNet](https://img.shields.io/badge/ResNet-CNN_Model-000000?style=for-the-badge)]()
+[![Computer Vision](https://img.shields.io/badge/Computer%20Vision-ResNet--Based-blue?style=for-the-badge)]()
 
 ---
 
-![Fear-Free Night Navigator Hero]![hero_banner_1775417799453](https://github.com/user-attachments/assets/0a780395-f34e-4b46-a60a-aa43d8162476)
+<img width="1919" height="948" alt="Screenshot 2026-04-06 014037" src="https://github.com/user-attachments/assets/4cd5afc3-365f-4603-a09d-519b8e8792bd" />
 
 
-**A hackathon-grade full-stack navigation platform that scores every road segment for night-time safety using infrastructure data (street lighting + CCTV coverage), ambient activity patterns, and a live Reinforcement Learning feedback loop — so your route suggestions actually improve the more people use it.**
 
-[📺 Demo](#-navigation-simulation) · [🚀 Setup](#-getting-started) · [🧠 Architecture](#-system-architecture) · [📊 Algorithm](#-safety-scoring-algorithm) · [🗂️ API Reference](#-api-reference)
+**A comprehensive full-stack navigation platform that scores every road segment for night-time safety using infrastructure data (street lighting + CCTV coverage), ambient activity patterns, and a live Reinforcement Learning feedback loop — so your route suggestions actually improve the more people use it.**
+
+<p align="center">
+  <a href="https://midnight-maps.vercel.app"><b>🌍 Try Live App</b></a> &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="https://youtu.be/AAlChO91CCU"><b>📺 Watch Demo</b></a> &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="#getting-started"><b>💻 Run on Local Machine</b></a>
+</p>
+
+---
 
 </div>
 
----
-
-## 📋 Table of Contents
-
-- [🌟 Why This Exists](#-why-this-exists)
-- [✨ Feature Showcase](#-feature-showcase)
-- [🏗️ System Architecture](#-system-architecture)
-- [🧠 Safety Scoring Algorithm](#-safety-scoring-algorithm)
-- [🔄 RL Learning Pipeline](#-reinforcement-learning-pipeline)
-- [📊 Data Flow](#-data-flow)
-- [🛠️ Tech Stack](#-tech-stack)
-- [📁 Project Structure](#-project-structure)
-- [🚀 Getting Started](#-getting-started)
-- [🗂️ API Reference](#-api-reference)
-- [📐 Data Schema](#-data-schema)
-- [🗺️ Datasets](#-datasets)
-- [🧪 Model Evaluation](#-model-evaluation)
-- [🛡️ Evaluation Rubric Alignment](#️-evaluation-rubric-alignment)
-
----
-
-## 🌟 Why This Exists
+##  The Problem
 
 Existing navigation apps (Google Maps, Apple Maps) optimize **purely for speed**. They don't know:
 
@@ -51,83 +40,200 @@ Existing navigation apps (Google Maps, Apple Maps) optimize **purely for speed**
 - Whether foot traffic makes the area feel safe
 - Whether the route passes through isolated underpasses or dead-ends
 
-**Fear-Free Night Navigator** fills this gap by building a city-wide **safety graph** on top of OpenStreetMap road data, enriched with real CCTV camera positions, street lamp data, and user feedback — then using a **Reinforcement Learning agent** to continuously improve its scoring model.
+**Midnight Maps** fills this gap by building a city-wide **safety graph** on top of OpenStreetMap road data, enriched with real CCTV camera positions, street lamp data, and user feedback, then using a **Reinforcement Learning agent** to continuously improve its scoring model.
+
+---
+## Midnight Maps - Landing Page
+<img width="1919" height="994" alt="image" src="https://github.com/user-attachments/assets/874c047a-6e7a-49ee-a643-3fce1894fa6f" />
 
 ---
 
-## ✨ Feature Showcase
+##  Feature Showcase
 
-### 🛡️ AI Safety Route Ranking
+# Route Ranking based on Safety
 
-Three routes are compared simultaneously and ranked as **Safest**, **Balanced**, or **Fastest** — each backed by live safety score computation across every road segment.
+Three routes are compared simultaneously and ranked as **Safest**, **Balanced**, or **Fastest**—backed by real-time safety computation.
 
-![Route Safety Cards]![feature_route_cards_1775417842858](https://github.com/user-attachments/assets/f2ed425f-183b-4c55-8fa9-7a95e688ef49)
-
-
-```
-Route Score = f(Lighting, Surveillance, Activity, Environment)
-           × Time-of-Day Weights × Dark & Deserted Penalty
-```
-
-| Badge | Meaning |
-|-------|---------|
-| 🟢 **Safest** | Maximizes `meanSafety × 0.7 + minScore × 0.3` |
-| 🔵 **Balanced** | `meanSafety - timePenalty × 0.75` |
-| 🟡 **Fastest** | Minimum travel duration |
+<table>
+  <tr>
+    <td width="30%" valign="top" rowspan="2">
+      <img src="https://github.com/user-attachments/assets/cbebe8c5-1384-43f6-a4d2-460a89e04cce" alt="Safety Interface" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+    </td>
+    <td width="70%" valign="top">
+      <h3>Scoring Logic</h3>
+      <p>Routes are processed through a multi-factor function that adjusts dynamically based on environmental shifts:</p>
+      <code>Route Score = f(Lighting, Surveillance, Activity, Environment)</code><br>
+      <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;× Time-of-Day Weights × Dark & Deserted Penalty</code>
+      <br><br>
+      <table>
+        <thead>
+          <tr>
+            <th>Badge</th>
+            <th>Optimization Formula</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>🟢 <b>Safest</b></td>
+            <td><code>meanSafety × 0.7 + minScore × 0.3</code></td>
+          </tr>
+          <tr>
+            <td>🔵 <b>Balanced</b></td>
+            <td><code>meanSafety - (timePenalty × 0.75)</code></td>
+          </tr>
+          <tr>
+            <td>🟡 <b>Fastest</b></td>
+            <td><code>min(travel_duration)</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+  <tr>
+  </tr>
+</table>
 
 ---
+###  CCTV Camera Overlay
 
-### 📷 CCTV Camera Overlay
+<p align="center" style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/user-attachments/assets/728df678-901f-46e0-93d3-17e0fbc821c6" width="49%" alt="Day Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+  <img src="https://github.com/user-attachments/assets/bb8c6519-758e-4d25-8446-1ee1cbf497e1" width="49%" alt="Night Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+</p>
 
-![CCTV Camera Overlay](https://raw.githubusercontent.com/your-username/fear-free-night-navigator/main/docs/feature_cameras_overlay.png)
+This Toggle button shows an overlay of all the cameras present in the region according to our dataset , For users the cameras can be shown in their Proximity (eg: ALL cameras within 50 m radius ) , but currently all the cameras are shown to validate how correctly our algorithm measures safety based on the cameras present.
 
-Toggle a live overlay of **CCTV camera locations** sourced from the `koramangala_cameras.json` dataset. Blue camera markers appear on every street with known camera coverage.
+#####  How CCTV Influences Safety Scores
 
-> **How it influences safety scores:** camera presence adds a ×1.35 multiplied boost to the raw camera feature value, capped at 1.0, contributing 15% (night) or 10% (day) to the total segment score.
+Camera presence applies a dynamic **×1.35 multiplier** to the raw camera feature value (capped at a maximum of `1.0`).
+Because visibility is more critical after dark, this score carries different weights depending on the time of day.
 
-```
+DAY - 10 %
+NIGHT - 15 %
+
+**The Calculation:**
+```text
 C_final = min(1.0, C_raw × 1.35)
 ```
+---
+
+###  Street Lamp Overlay
+
+<p align="center" style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/user-attachments/assets/2913f499-ad2d-4c04-908c-074dfe2be2b1" width="49%" alt="Day Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+  <img src="https://github.com/user-attachments/assets/1f5f83eb-f52a-4f5a-9f09-3aa72a4c4534" width="49%" alt="Night Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+</p>
+
+Toggling the **street lighting layer** shows amber dot markers at every recorded lamp position from `koramangala_street_lamps.json` file. Currently this is done to demonstrate how the lightness and the safety scores are influenced by the street lamps present . Later for users , the lamps can be shown in their proximity or on their navigating path.
+
+**Why lighting is critical at night:** At night, lighting carries **40% weight** in the safety formula.
+A `lighting < 0.3` triggers an additional **15–30% penalty** on the base score.
 
 ---
 
-### 💡 Street Lamp Overlay
+### Route Intelligence Panel
 
-Toggle the **street lighting layer** showing amber dot markers at every recorded lamp position from `koramangala_street_lamps.json`. Lamp density directly feeds the `lighting` feature per segment.
+After the route analysis is complete, a collapsible **Route Intelligence** panel provides a transparent breakdown of exactly why a route received its safety score.
 
-> **Why lighting is critical at night:** At night, lighting carries **40% weight** in the safety formula. A `lighting < 0.3` triggers an additional **15–30% penalty** on the base score.
+<table>
+  <tr>
+    <td width="35%" valign="top">
+      <img src="https://github.com/user-attachments/assets/1048efbf-0f45-41d7-a381-434f97fce5cf" alt="Route Intelligence Panel" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 100%;">
+    </td>
+    <td width="65%" valign="top">
+      <h4>Nighttime Scoring Weights</h4>
+      <p>The algorithm adapts its weighting based on the time of day. Below is the breakdown for nighttime routing:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Data Source</th>
+            <th>Weight (Night)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td> <b>Lighting</b></td>
+            <td><code>features.lighting[timeSlot]</code></td>
+            <td><b>40%</b></td>
+          </tr>
+          <tr>
+            <td> <b>Surveillance</b></td>
+            <td><code>features.camera × 1.35</code></td>
+            <td><b>15%</b></td>
+          </tr>
+          <tr>
+            <td><b>Activity</b></td>
+            <td><code>features.activity[timeSlot]</code></td>
+            <td><b>25%</b></td>
+          </tr>
+          <tr>
+            <td><b>Context</b></td>
+            <td><code>features.environment</code></td>
+            <td><b>20%</b></td>
+          </tr>
+        </tbody>
+      </table>
+      <p align="right"><small><i>Weights shift dynamically during daylight hours to prioritize activity and environment over lighting.</i></small></p>
+    </td>
+  </tr>
+</table>
 
 ---
 
-### 📊 Route Intelligence Panel
+###  Map Overlay icons
 
-After route analysis, a collapsible **Route Intelligence** panel shows:
+The routing interface features a robust set of toggleable map layers on the right-hand panel. This allows users to visualize the exact environmental data driving their route's safety score.
 
-| Metric | Source | Weight (Night) |
-|--------|--------|----------------|
-| 🔦 Lighting | `features.lighting[timeSlot]` | **40%** |
-| 📷 Surveillance | `features.camera × 1.35` | **15%** |
-| 🚶 Activity | `features.activity[timeSlot]` | **25%** |
-| 🌳 Context | `features.environment` | **20%** |
 
-The panel computes its own **local safety score** client-side using the same formula as the backend, making the UI always in sync without an extra API call.
-
----
-
-### 🗺️ Map Overlays
-
-| Overlay | Toggle | Data Source |
-|---------|--------|-------------|
-| 📷 CCTV Cameras | `CameraToggle` | `koramangala_cameras.json` |
-| 💡 Street Lamps | `LampToggle` | `koramangala_street_lamps.json` |
-| 🚔 Police Stations | Route Intelligence panel | Hardcoded demo + Google Places |
-| 🚦 Live Traffic | `TrafficToggle` | Google Maps Traffic Layer |
-| 🔔 Nearby Alerts | `NearbyAlertsToggle` | Google Places API (live) |
-| 🌙 Night Mode | `TimeModeToggle` | Dark map style override |
+| Control  | Overlay Layer | Description & Routing Impact |
+| :---: | :--- | :--- |
+| <img src="https://github.com/user-attachments/assets/9307ba08-9cad-4416-9db5-01dd0e5706c8" alt="Placeholder: Base Map" width="30" height="30"> | **Base Map** | Toggles satellite imagery . |
+| <img src="https://github.com/user-attachments/assets/0d80e6aa-c843-4114-aacd-6a5ea44c5e01" alt="Placeholder: Traffic" width="30" height="30"> | **Traffic** | Shows Traffic layer . |
+| <img src="https://github.com/user-attachments/assets/22f05414-2b43-4732-b401-b0f288509855" alt="Placeholder: open shops" width="30" height="30"> | **Open shops and Police Nearby** | Displays Nearby open shops and Police Station nearby so users can feel safe on night streets. |
+| <img src="https://github.com/user-attachments/assets/ec917a5d-de8d-4d89-ac62-a99a3bde2d19" alt="Placeholder: cameras" width="30" height="30"> | **Show Cameras** | Overlays the map with cameras present |
+| <img src="https://github.com/user-attachments/assets/e43a2fbb-246a-445d-a73a-842313f3a1b5" alt="Placeholder: Lamps" width="30" height="30"> | **Show Lamps** | Overlays the map with Lamps present |
+| <img src="https://github.com/user-attachments/assets/902b7167-785e-4635-b36f-e75c25faf67e" alt="Placeholder: Midnight Toggle" width="30" height="30"> | **Midnight Toggle ** | This Toggles the current time to midnight so that users can inspect the safety in a night environment , also Needed for demonstration purposes |
+| <img src="https://github.com/user-attachments/assets/32838f6e-2ac5-4b6f-9d2d-7f9a0e8b2fc2" alt="Placeholder: Location" width="30" height="30"> | **Show My location** | On toggling Users current location is shown |
+| <img src="https://github.com/user-attachments/assets/a9780c77-598d-417d-b64c-5a7a6d228e2f" alt="Placeholder: StreetView" width="30" height="30"> | **Street View Pegman** | Users can drag and drop to see street views |
+| <img src="https://github.com/user-attachments/assets/ae1861a7-d43d-4036-bab5-5342efd644a2" alt="Placeholder: safety inspector" width="30" height="30"> | **Safety Inspector** | Shows all the safety metrics of a street |
 
 ---
 
-### 🧭 Navigation Simulation
+### Safety Inspector (Street-Level)
+
+<table>
+  <tr>
+    <td width="40%" valign="top">
+      <img src="https://github.com/user-attachments/assets/0c9f1f09-1552-4ca5-932a-839eabefa72d" alt="Safety Inspector View 1" style="border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin-bottom: 15px; width: 100%;">
+      <img src="https://github.com/user-attachments/assets/78573bf6-580f-466c-a90a-10fb4632b610" alt="Safety Inspector View 2" style="border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); width: 100%;">
+    </td>
+    <td width="60%" valign="top">
+      <h4>Deep Dive into Segment Data</h4>
+      <p>The <b>Safety Inspector</b> mode empowers users to interrogate any individual road segment directly on the map. Instantly retrieve raw safety metrics without ever leaving your navigation flow.</p>
+      <hr>
+      <h5>Instant Safety Metrics Shown:</h5>
+      <ul>
+        <li> <b>Lighting Profile:</b> View current illumination levels and identify potential dark zones.</li>
+        <li> <b>Camera Coverage:</b> Verify the density of active surveillance and CCTV presence.</li>
+        <li> <b>Activity Profile:</b> Check live foot traffic.</li>
+        <li> <b>Environment Context:</b> See Whether the street is in residential safe area or isolated empty area.</li>
+      </ul>
+      <br>
+      <blockquote>
+        <i> The images here show how lighting is affected by the presence of street lamps , both the images are of night time hence low lighting score </i>
+      </blockquote>
+    </td>
+  </tr>
+</table>
+
+------
+
+###  Navigation Simulation
+
+**Note on Simulation:** This feature was built specifically for the hackathon environment. Because I cannot practically field test routing over roads at night, so I built this simulation engine. It allows users and judges to experience the full navigation flow, UI transformations, and post-trip Reinforcement Learning feedback loop directly from their browser.
+
+<img width="1919" height="1079" alt="Screenshot 2026-04-06 015559" src="https://github.com/user-attachments/assets/96a4355d-a9dc-4c22-8aca-0088c2530d99" />
 
 A full route simulation engine drives a marker along the selected route at configurable speed (default 12 m/s ≈ 43 km/h). During simulation:
 
@@ -135,32 +241,35 @@ A full route simulation engine drives a marker along the selected route at confi
 - A **Navigation HUD** shows turn-by-turn instructions with distance countdowns
 - The sidebar collapses for an immersive full-screen experience
 - On completion, a **Trip Summary Modal** collects segment-level feedback
+- There is option to see nearby open shops and police stations while navigating , so that users can feel safe.
 
 ---
 
-### 🔍 Safety Inspector (Street-Level)
+###  Google Street View Integration
 
-The **Safety Inspector** mode lets users inspect any segment on the map and see its raw safety features — lighting profile, camera coverage, activity profile — without leaving the map.
-
----
-
-### 🌐 Google Street View Integration
+<p align="center" style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/user-attachments/assets/ba400fa6-2ac1-4f20-9e3d-6935219c923c" width="49%" alt="Day Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+  <img src="https://github.com/user-attachments/assets/3df8f28f-ff14-4ae9-b161-a1c5b713ba32" width="49%" alt="Night Mode CCTV Overlay" style="border-radius: 8px; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);">
+</p>
 
 A **Pegman control** lets users drop into Street View panorama at any location to visually validate the AI's safety assessment before committing to a route.
+In the images Shown we can see , how the environment is assessed using the street view images , for the street shown in the first image environment context is higher while lower for that in second image. Also the reason for low lighting is that the screenshot was taken at night time .
 
 ---
 
-### ⭐ Community Feedback Loop
+###  Community Feedback Loop
 
-After every trip, a **Segment Rating Panel** chunks the route into 3–5 geographic parts and asks the user to rate safety on each. This feedback is logged to **FeedbackLog** and processed by the RL agent.
+<img width="1340" height="1032" alt="Screenshot 2026-04-06 015908" src="https://github.com/user-attachments/assets/20d4ee63-df73-4e08-a64c-bf7acc09b3ce" />
+
+After every trip, a **Segment Rating Panel** chunks the route into geographic parts based on turns taken and asks the user to choose the safest or most unsafe part. This feedback is logged to **FeedbackLog** and processed by the RL agent.
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TB
-    subgraph CLIENT["🖥️ Frontend — React 19 + TypeScript + Vite"]
+    subgraph CLIENT[" Frontend — React 19 + TypeScript + Vite"]
         UI["UI Layer\n(Framer Motion + Tailwind)"]
         STORE["Zustand Store\n(useNavigationStore)"]
         HOOKS["Custom Hooks\n(useDirections, useNavigation\nuseUserLocation, useStreetView)"]
@@ -171,7 +280,7 @@ graph TB
         MAP --> STORE
     end
 
-    subgraph BACKEND["⚙️ Backend — Node.js + Express"]
+    subgraph BACKEND[" Backend — Node.js + Express"]
         API["REST API\n/api/segments/..."]
         CTRL["segmentController.js\n(Route Analysis Logic)"]
         SCORE["scoringService.js\n(Recompute Scores)"]
@@ -180,12 +289,12 @@ graph TB
         CRON["node-cron\n(Hourly Batch Training)"]
     end
 
-    subgraph DATA["🗃️ Data Layer"]
+    subgraph DATA[" Data Layer"]
         MONGO[("MongoDB Atlas\nRoadSegment\nScoredSegment\nFeedbackLog")]
         REDIS[("Redis Cache\nRoute Analysis\nNearby Segments")]
     end
 
-    subgraph EXTERNAL["🌍 External APIs"]
+    subgraph EXTERNAL[" External APIs"]
         GMAPS["Google Maps API\n(Directions, Places,\nGeocoder, StreetView)"]
         OSM["OpenStreetMap\n(Base Road Graph)"]
     end
@@ -207,7 +316,7 @@ graph TB
 
 ---
 
-## 🧠 Safety Scoring Algorithm
+##  Safety Scoring Algorithm
 
 Each road segment in the city has **4 features** extracted at import time. The safety score is **not static** — it is computed per 2-hour time slot across a 24-hour cycle.
 
@@ -219,10 +328,10 @@ Each road segment in the city has **4 features** extracted at import time. The s
 ├───────────────┬─────────────────┬───────────────────────┤
 │  Feature      │  Night Weight   │  Day Weight           │
 ├───────────────┼─────────────────┼───────────────────────┤
-│  💡 Lighting  │  40%            │  50% (forced to 1.0)  │
-│  🚶 Activity  │  25%            │  10%                  │
-│  🌳 Environ.  │  20%            │  30%                  │
-│  📷 Camera    │  15%            │  10%                  │
+│  Lighting     │  40%            │  50% (forced to 1.0)  │
+│  Activity     │  25%            │  10%                  │
+│  Environ.     │  20%            │  30%                  │
+│  Camera       │  15%            │  10%                  │
 └───────────────┴─────────────────┴───────────────────────┘
 ```
 
@@ -254,32 +363,16 @@ computeSafetyScore(features, timeSlot t):
 6. Clamp:
    return clamp(score, 0.02, 0.98)
 ```
-
-### Route-Level Aggregation
-
-```mermaid
-flowchart LR
-    A["Route Polyline\n(N waypoints)"] --> B["Sample every ~100m"]
-    B --> C["Query MongoDB 2dsphere\n(nearest segment ≤ 500m)"]
-    C --> D["Get score[timeSlot]\nfor each sample"]
-    D --> E["Distance-weighted\naverage safety"]
-    E --> F{"Chokepoint\nCheck"}
-    F -->|"Dangerous dist > 150m"| G["Apply penalty\nup to -0.30"]
-    F -->|"OK"| H["Final Mean Safety"]
-    G --> H
-    H --> I["Final = 0.35 + rawMean×0.65"]
-```
-
 ---
 
-## 🔄 Reinforcement Learning Pipeline
+## Reinforcement Learning Pipeline
 
 The system uses a **tabular RL approach** inspired by temporal-difference learning. Rather than a neural network (which would be overkill for the data volume), it maintains a **`rl_modifier` float per segment** that shifts the pre-computed base score up or down based on community feedback.
 
 ### RL Update Rule
 
 ```
-RL Update (Batch, every hour via cron):
+RL Update (Batch, every hour via cron): schedule of updation can be adjusted
 
 For each new FeedbackLog:
   error = target_score - current_total_score
@@ -294,41 +387,9 @@ Update rule:
 Clamp:
   rl_modifier[S] = clamp(rl_modifier[S], -0.30, +0.30)
 ```
-
-### Credit Assignment for Route Ratings
-
-When a user rates an **entire route** (not a specific segment), the system uses **inverse-safety weighting** to distribute credit:
-
-```mermaid
-flowchart TD
-    A["User rates route: 4/5 ⭐"] --> B["Convert: target = (4-1)/4 = 0.75"]
-    B --> C["Fetch all N segments on route"]
-    C --> D["Compute inverse_safety[i] = 1 - currentScore[i]"]
-    D --> E["Total weight = Σ inverse_safety[i]"]
-    E --> F["normalizedWeight[i] = inverse_safety[i] / total"]
-    F --> G["globalError = target - routeAverage"]
-    G --> H["segError[i] = globalError × normalizedWeight[i]"]
-    H --> I["Dangerous segments absorb\nmore of the error signal"]
-```
-
-> **Key Insight:** If the user loved the route (high rating) but one segment is dangerous (low score), that dangerous segment gets a disproportionately **large positive update** — because it was the most surprising segment to the model.
-
-### Spam Detection
-
-```mermaid
-flowchart LR
-    A["New FeedbackLog batch"] --> B{"User rated\n≥ 3 times?"}
-    B -->|No| C["Accept at learning_weight = 1.0"]
-    B -->|Yes| D{"All 1s\nor all 5s?"}
-    D -->|Yes| E["learning_weight = 0.30\n⚠️ Likely Spam"]
-    D -->|No| F{"Variance\n< 0.5?"}
-    F -->|Yes| G["learning_weight = 0.70\n⚠️ Low variance"]
-    F -->|No| H["learning_weight = 1.0\n✅ Legitimate"]
-```
-
 ---
 
-## 📊 Data Flow
+## Data Flow
 
 ### Route Analysis Request Flow
 
@@ -372,7 +433,7 @@ sequenceDiagram
     
     U->>FE: Completes trip simulation
     FE->>FE: TripSummaryModal appears
-    U->>FE: Rates route segments (1–5 ⭐)
+    U->>FE: Rates route segments
     FE->>BE: POST /api/segments/rate-route-chunks\n{route_chunks, safest_chunk_id, confidence}
     BE->>DB: Write FeedbackLog\n{is_processed: false}
     BE-->>FE: {success: true}
@@ -387,7 +448,7 @@ sequenceDiagram
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 
@@ -418,81 +479,12 @@ sequenceDiagram
 | **Safety Scoring** | Weighted multi-feature linear model (time-adaptive) |
 | **RL Update** | Tabular temporal-difference (α=0.20, clamped modifier) |
 | **Credit Assignment** | Inverse-safety proportional weighting |
-| **Spam Detection** | Variance analysis on user rating history |
 | **Route Analysis** | Distance-weighted spatial averaging + chokepoint detection |
 | **Geo-querying** | MongoDB 2dsphere index, Haversine distance |
-| **Caching** | Redis SETEX with 12-hour TTL |
 
 ---
 
-## 📁 Project Structure
-
-```
-Fear-Free-Night-Navigator/
-│
-├── 📂 src/                          # React Frontend
-│   ├── App.tsx                      # Root layout + control orchestration
-│   ├── 📂 components/
-│   │   ├── 📂 Map/
-│   │   │   ├── MapView.tsx          # Core map, overlays, nav camera
-│   │   │   ├── SafetyInspector.tsx  # Click-to-inspect segment safety
-│   │   │   ├── StreetViewPanel.tsx  # Google Street View integration
-│   │   │   └── RoutePolylines.tsx   # Route lines with progress masking
-│   │   └── 📂 UI/
-│   │       ├── SearchBar.tsx        # Location input with autocomplete
-│   │       ├── RouteCard.tsx        # Per-route safety card
-│   │       ├── RouteInsightsPanel.tsx # Feature breakdown panel
-│   │       ├── NavigationHUD.tsx    # Driving HUD overlay
-│   │       ├── TripSummaryModal.tsx # Post-trip feedback collection
-│   │       ├── SegmentRatingPanel.tsx # Chunk-level rating UI
-│   │       ├── CameraToggle.tsx     # CCTV overlay toggle
-│   │       ├── LampToggle.tsx       # Street lamp overlay toggle
-│   │       ├── NearbyAlertsToggle.tsx # Live nearby POI alerts
-│   │       └── TimeModeToggle.tsx   # Night mode demo toggle
-│   ├── 📂 store/
-│   │   └── useNavigationStore.ts    # Zustand global state
-│   ├── 📂 hooks/
-│   │   ├── useNavigationController.ts # Simulation engine
-│   │   ├── useDirections.ts         # Google Directions fetching
-│   │   ├── useUserLocation.ts       # Browser geolocation
-│   │   └── useStreetView.ts         # Street View panorama control
-│   └── 📂 utils/
-│       └── timeUtils.ts             # Time slot computation
-│
-├── 📂 backend/                      # Node.js Backend
-│   ├── server.js                    # Entry point + cron job setup
-│   ├── app.js                       # Express app + middleware
-│   ├── 📂 controllers/
-│   │   └── segmentController.js     # All route analysis + feedback handlers
-│   ├── 📂 services/
-│   │   ├── batchLearningService.js  # RL training loop (runs hourly)
-│   │   ├── creditAssignmentService.js # Route → segment credit decomposition
-│   │   ├── scoringService.js        # Batch score recomputation
-│   │   └── segmentService.js        # CRUD helpers for segments
-│   ├── 📂 models/
-│   │   ├── RoadSegment.js           # Road features schema (2dsphere)
-│   │   ├── ScoredSegment.js         # Safety scores + rl_modifier
-│   │   └── FeedbackLog.js           # User feedback events
-│   ├── 📂 utils/
-│   │   ├── computeSafetyScore.js    # Core scoring formula
-│   │   └── generateSegmentId.js     # Deterministic segment ID
-│   └── 📂 config/
-│       ├── db.js                    # MongoDB connection
-│       └── redis.js                 # Redis client
-│
-├── 📂 datasets/
-│   ├── bangalore_city_full.json        # Full city road graph (OSM)
-│   ├── bangalore_graph_with_activity.json # Enriched with activity profiles
-│   ├── koramangala_cameras.json        # CCTV camera locations
-│   └── koramangala_street_lamps.json   # Street lamp positions
-│
-└── 📂 scripts/                      # Data pipeline scripts
-    └── (import/transform scripts)
-```
-
----
-
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -504,23 +496,21 @@ Fear-Free-Night-Navigator/
 | Redis | 7.x | Caching layer |
 | Google Maps API Key | — | Maps, Directions, Places |
 
----
-
-### 1. Clone the Repository
+#### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/fear-free-night-navigator.git
-cd fear-free-night-navigator
+git clone https://github.com/aprajita-99/Midnight-Maps.git
+cd Midnight-Maps
 ```
+#### 2. Configure Environment Variables
 
----
-
-### 2. Configure Environment Variables
-
-#### Frontend `.env` (project root)
+Frontend `.env` (project root)
 
 ```env
-VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+VITE_GOOGLE_MAPS_API_KEY = your-api-key
+MONGODB_URI=your-database-url ( database here is very important because of all the data being present here )
+VITE_API_BASE_URL=https://localhost:5000
+RL_TRAINING_INTERVAL_MS=300000
 ```
 
 **Required Google Maps APIs to enable:**
@@ -530,27 +520,17 @@ VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 - Geocoding API
 - Street View Static API
 
-#### Backend `.env` (`/backend/.env`)
+Backend `.env` (`/backend/.env`)
 
 ```env
-NODE_ENV=development
 PORT=5000
+MONGODB_URI=your-database-URL
+NODE_ENV=development
+REDIS_URL=your-Redis_URL
 
-# MongoDB (Atlas or local)
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/night_navigator?retryWrites=true&w=majority
-
-# Redis (local or Redis Cloud)
-REDIS_URL=redis://localhost:6379
-
-# Optional: Redis Cloud credentials
-REDIS_HOST=your-redis-host
-REDIS_PORT=6379
-REDIS_PASSWORD=your-redis-password
 ```
 
----
-
-### 3. Install Dependencies
+#### 3. Install Dependencies
 
 ```bash
 # Frontend dependencies
@@ -562,30 +542,23 @@ npm install
 cd ..
 ```
 
----
-
-### 4. Seed the Database
+#### 4. Seed the Database
 
 Import the road graph and safety features into MongoDB:
 
 ```bash
-cd backend
-
-# Import Koramangala road segments (start with this for demo)
-node scripts/importSegments.js
-
-# (Optional) Full Bangalore city graph
-node scripts/importFullCity.js
-
-# Compute initial safety scores for all segments
-node scripts/syncScores.js
+Step 1 - Run the script enrich_activity.py to fill the database with the segments and their activity values
+Step 2 - Run the script update_lighting.py to update the database with lighting values.
+Step 3 - Run the script update_camera.py to update the database with camera feature values.
+Step 4 - Download the model from the link given (http://places2.csail.mit.edu/models_places365/resnet50_places365.pth.tar)
+Step 5 - With the model and Categories365 fil , Run the script fill_environment.py
+Step 6 - run recompute_safety_scores.py
+- All done
 ```
 
 > **Note:** The datasets directory contains pre-processed JSON files. The seed scripts read these files and insert them into the `road_segments` and `scored_segments` MongoDB collections with proper 2dsphere indices.
 
----
-
-### 5. Run the Application
+#### 5. Run the Application
 
 **Terminal 1 — Backend Server:**
 ```bash
@@ -604,19 +577,17 @@ npm run dev
 **Terminal 3 (optional) — Watch backend logs for RL training:**
 ```bash
 cd backend
-npm run dev  # if using nodemon
+npm run dev
 ```
-
----
 
 ### 6. Verify the Setup
 
 Open `http://localhost:5173` in your browser. You should see:
 
-1. ✅ The **Midnight Maps** loading screen appears briefly
-2. ✅ A dark-themed map centered on **Koramangala, Bangalore**
-3. ✅ The left sidebar shows **Search Bar** and **Travel Mode** tabs
-4. ✅ Map controls (camera, lamp, traffic toggles) appear top-right
+1.  The **Midnight Maps** loading screen appears briefly
+2.  A dark-themed map centered on **Koramangala, Bangalore**
+3.  The left sidebar shows **Search Bar** and **Travel Mode** tabs
+4.  Map controls (camera, lamp, traffic toggles) appear top-right
 
 Test route analysis:
 1. Type a start location (e.g., "Forum Mall, Koramangala")
@@ -626,107 +597,9 @@ Test route analysis:
 
 ---
 
-## 🗂️ API Reference
+##  Data Schema
 
-**Base URL:** `http://localhost:5000/api/segments`
-
-### `POST /analyze-routes`
-Analyze multiple route alternatives for safety.
-
-**Request:**
-```json
-{
-  "routes": [
-    {
-      "points": [{"lat": 12.935, "lng": 77.624}, ...],
-      "distance": 4200,
-      "duration": 820
-    }
-  ],
-  "timeSlot": 0
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "routes": [
-    {
-      "routeIndex": 0,
-      "meanSafety": 0.74,
-      "risk": 0.12,
-      "minScore": 0.45,
-      "feedbackChunks": [...],
-      "features": {
-        "lighting": 0.68,
-        "camera": 0.52,
-        "activity": 0.61,
-        "environment": 0.71
-      }
-    }
-  ],
-  "indices": {
-    "shortest": 2,
-    "safest": 0,
-    "balanced": 1
-  }
-}
-```
-
----
-
-### `POST /rate-segment`
-Submit a single segment safety rating.
-
-```json
-{
-  "segment_id": "seg_12.9353_77.6251",
-  "rating": 4,
-  "time_slot": 0,
-  "confidence": 0.85
-}
-```
-
----
-
-### `POST /rate-route-chunks`
-Submit chunk-level route feedback after a trip.
-
-```json
-{
-  "route_chunks": [
-    {
-      "chunk_id": "part-1",
-      "label": "Part 1",
-      "distance": 1200,
-      "segment_ids": ["seg_..."],
-      "sample_count": 12
-    }
-  ],
-  "safest_chunk_id": "part-3",
-  "unsafe_chunk_id": "part-1",
-  "time_slot": 0,
-  "confidence": 0.9
-}
-```
-
----
-
-### `GET /nearby?lat=12.93&lng=77.62&radius=500`
-Get road segments near a coordinate.
-
-### `GET /nearest?lat=12.93&lng=77.62`
-Get the single nearest segment (≤200m).
-
-### `POST /sync-scores`
-Trigger manual recomputation of all safety scores.
-
----
-
-## 📐 Data Schema
-
-### RoadSegment (MongoDB)
+#### RoadSegment (MongoDB)
 
 ```
 segment_id       String    — Unique (e.g., "12.9353_77.6251:12.9361_77.6255")
@@ -768,121 +641,29 @@ user_context:
   lighting_conditions String
   companion_count Number
 ```
-
 ---
 
-## 🗺️ Datasets
+## Datasets and Models Used
 
 ### `koramangala_cameras.json`
 ~250 CCTV camera locations in the Koramangala area sourced from civic mapping data.
-
-```json
-[{"lat": 12.9353, "lng": 77.6251}, ...]
-```
+~fetched using API - "https://overpass-api.de/api/interpreter"
 
 ### `koramangala_street_lamps.json`
 ~1,500 street lamp positions providing granular lighting coverage data.
+~fetched using API - "https://overpass-api.de/api/interpreter"
 
 ### `bangalore_city_full.json`
 Full OpenStreetMap road graph for Bangalore city (~12k nodes, edges encoded as segment pairs).
+~fetched using osmnx python Library.
 
-### `bangalore_graph_with_activity.json`
-Enriched graph with synthetic activity profiles based on land-use classification (commercial, residential, industrial, park) — each producing realistic 12-slot activity vectors.
-
----
-
-## 🧪 Model Evaluation
-
-### Safety Score Validation
-
-We validated the scoring formula against known dangerous/safe streets in Koramangala:
-
-| Segment Type | Expected Category | Computed Score (Night) |
-|-------------|-------------------|----------------------|
-| Lit commercial road with CCTV | Safe | 0.82 – 0.91 |
-| Residential side street, some lamps | Moderate | 0.55 – 0.70 |
-| Dark industrial lane, no cameras | Dangerous | 0.18 – 0.35 |
-| Main road (daytime) | Safe | 0.88 – 0.96 |
-
-### RL Convergence Properties
-
-```
-α = 0.20 (learning rate)
-modifier clamp = ±0.30
-
-Expected convergence to within ε=0.05 of ground truth:
-  ~20 feedback events for a segment (one per batch cycle)
-  ≈ 20 hours with 1 rating/hour on active segments
-```
-
-### Cache Performance
-
-| Scenario | Latency |
-|---------|---------|
-| Cache HIT (Redis) | < 5ms |
-| Cache MISS (MongoDB 2dsphere × 100 samples) | 300–800ms |
-| Cache TTL | 12 hours |
-
-### Spam Resistance
-
-| Pattern | Detected? | Weight Applied |
-|---------|-----------|---------------|
-| All 1-star ratings | ✅ Yes | 30% |
-| All 5-star ratings | ✅ Yes | 30% |
-| Low variance (all 3s) | ✅ Yes | 70% |
-| Realistic mixed ratings | — | 100% |
-
----
-
-## 🛡️ Evaluation Rubric Alignment
-
-This project was built for the **Midnight Maps Safety Navigation Hackathon**. Here's how it maps to the evaluation criteria:
-
-### ⚡ Potential Impact & Uniqueness (20%)
-
-- **Novel Problem:** No mainstream app computes night-time safety scores per road segment
-- **Community Learning:** The RL feedback loop means the product improves with every user — a network effect unique to this approach
-- **Real Infrastructure Data:** Uses actual CCTV + street lamp positions, not synthetic proxies
-
-### 🧠 DS/Algorithm & Architectural Scalability (50%)
-
-| Requirement | Implementation |
-|-------------|---------------|
-| Correct DS/Algorithm | Tabular RL (TD), inverse-safety credit assignment, distance-weighted spatial averaging |
-| Architectural Scalability | Redis caching (12h), MongoDB 2dsphere geo-index, batch processing (100 logs/cycle) |
-| AI/ML Technique | RL with confidence-weighted updates, spam detection via variance analysis |
-| Functionality | Full end-to-end: data ingestion → scoring → route ranking → simulation → feedback → retraining |
-
-### 💎 Code Quality (10%)
-
-- TypeScript throughout the frontend (strict types: `RouteMetric`, `LocationInfo`, `TravelMode`)
-- Separation of concerns: controllers → services → utils → models
-- Redis cache key design uses deterministic hashing for correctness
-- RL modifier clamping prevents runaway learning (±0.30 hard limit)
-
-### 📊 Model Evaluation & Testing (20%)
-
-- Validation table against known Koramangala street categories
-- Cache performance benchmarks documented
-- Spam detection tested with edge cases
-- RL convergence rate analyzed theoretically (α=0.20, ~20 events to ε=0.05)
-- Chokepoint penalty system handles real-world "one bad block" scenarios
-
----
-
-## 🙏 Acknowledgements
-
-- **OpenStreetMap** contributors for the base road graph
-- **Google Maps Platform** for Directions, Places, and Street View APIs
-- Civic data sources for Koramangala CCTV and street lamp positions(OpenCity)
-- **Framer Motion** for the spring animation system
+### `365Places Model`
+Downloaded From - http://places2.csail.mit.edu/models_places365/resnet50_places365.pth.tar
 
 ---
 
 <div align="center">
 
-**Built with 🌙 for the Midnight Maps Hackathon**
-
-*"The streets don't change. Our understanding of them does."*
+**Midnight Maps**
 
 </div>
