@@ -324,14 +324,14 @@ Each road segment in the city has **4 features** extracted at import time. The s
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│              TIME-ADAPTIVE SAFETY WEIGHTS                │
+│              TIME-ADAPTIVE SAFETY WEIGHTS               │
 ├───────────────┬─────────────────┬───────────────────────┤
 │  Feature      │  Night Weight   │  Day Weight           │
 ├───────────────┼─────────────────┼───────────────────────┤
-│  Lighting  │  40%            │  50% (forced to 1.0)  │
-│  Activity  │  25%            │  10%                  │
-│  Environ.  │  20%            │  30%                  │
-│  Camera    │  15%            │  10%                  │
+│  Lighting     │  40%            │  50% (forced to 1.0)  │
+│  Activity     │  25%            │  10%                  │
+│  Environ.     │  20%            │  30%                  │
+│  Camera       │  15%            │  10%                  │
 └───────────────┴─────────────────┴───────────────────────┘
 ```
 
