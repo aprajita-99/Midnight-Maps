@@ -21,7 +21,11 @@
 
 **A comprehensive full-stack navigation platform that scores every road segment for night-time safety using infrastructure data (street lighting + CCTV coverage), ambient activity patterns, and a live Reinforcement Learning feedback loop — so your route suggestions actually improve the more people use it.**
 
-[Try Live App](https://midnight-maps.vercel.app) · [ Watch Demo](https://youtu.be/AAlChO91CCU)
+<p align="center">
+  <a href="https://midnight-maps.vercel.app"><b>🌍 Try Live App</b></a> &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="https://youtu.be/AAlChO91CCU"><b>📺 Watch Demo</b></a> &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="#getting-started"><b>💻 Run on Local Machine</b></a>
+</p>
 
 ---
 
@@ -237,6 +241,7 @@ A full route simulation engine drives a marker along the selected route at confi
 - A **Navigation HUD** shows turn-by-turn instructions with distance countdowns
 - The sidebar collapses for an immersive full-screen experience
 - On completion, a **Trip Summary Modal** collects segment-level feedback
+- There is option to see nearby open shops and police stations while navigating , so that users can feel safe.
 
 ---
 
@@ -254,19 +259,17 @@ In the images Shown we can see , how the environment is assessed using the stree
 
 ###  Community Feedback Loop
 
-
 <img width="1340" height="1032" alt="Screenshot 2026-04-06 015908" src="https://github.com/user-attachments/assets/20d4ee63-df73-4e08-a64c-bf7acc09b3ce" />
 
-
-After every trip, a **Segment Rating Panel** chunks the route into 3–5 geographic parts and asks the user to rate safety on each. This feedback is logged to **FeedbackLog** and processed by the RL agent.
+After every trip, a **Segment Rating Panel** chunks the route into geographic parts based on turns taken and asks the user to choose the safest or most unsafe part. This feedback is logged to **FeedbackLog** and processed by the RL agent.
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TB
-    subgraph CLIENT["🖥️ Frontend — React 19 + TypeScript + Vite"]
+    subgraph CLIENT[" Frontend — React 19 + TypeScript + Vite"]
         UI["UI Layer\n(Framer Motion + Tailwind)"]
         STORE["Zustand Store\n(useNavigationStore)"]
         HOOKS["Custom Hooks\n(useDirections, useNavigation\nuseUserLocation, useStreetView)"]
@@ -277,7 +280,7 @@ graph TB
         MAP --> STORE
     end
 
-    subgraph BACKEND["⚙️ Backend — Node.js + Express"]
+    subgraph BACKEND[" Backend — Node.js + Express"]
         API["REST API\n/api/segments/..."]
         CTRL["segmentController.js\n(Route Analysis Logic)"]
         SCORE["scoringService.js\n(Recompute Scores)"]
@@ -286,12 +289,12 @@ graph TB
         CRON["node-cron\n(Hourly Batch Training)"]
     end
 
-    subgraph DATA["🗃️ Data Layer"]
+    subgraph DATA[" Data Layer"]
         MONGO[("MongoDB Atlas\nRoadSegment\nScoredSegment\nFeedbackLog")]
         REDIS[("Redis Cache\nRoute Analysis\nNearby Segments")]
     end
 
-    subgraph EXTERNAL["🌍 External APIs"]
+    subgraph EXTERNAL[" External APIs"]
         GMAPS["Google Maps API\n(Directions, Places,\nGeocoder, StreetView)"]
         OSM["OpenStreetMap\n(Base Road Graph)"]
     end
@@ -313,7 +316,7 @@ graph TB
 
 ---
 
-## 🧠 Safety Scoring Algorithm
+##  Safety Scoring Algorithm
 
 Each road segment in the city has **4 features** extracted at import time. The safety score is **not static** — it is computed per 2-hour time slot across a 24-hour cycle.
 
@@ -325,10 +328,10 @@ Each road segment in the city has **4 features** extracted at import time. The s
 ├───────────────┬─────────────────┬───────────────────────┤
 │  Feature      │  Night Weight   │  Day Weight           │
 ├───────────────┼─────────────────┼───────────────────────┤
-│  💡 Lighting  │  40%            │  50% (forced to 1.0)  │
-│  🚶 Activity  │  25%            │  10%                  │
-│  🌳 Environ.  │  20%            │  30%                  │
-│  📷 Camera    │  15%            │  10%                  │
+│  Lighting  │  40%            │  50% (forced to 1.0)  │
+│  Activity  │  25%            │  10%                  │
+│  Environ.  │  20%            │  30%                  │
+│  Camera    │  15%            │  10%                  │
 └───────────────┴─────────────────┴───────────────────────┘
 ```
 
@@ -360,35 +363,16 @@ computeSafetyScore(features, timeSlot t):
 6. Clamp:
    return clamp(score, 0.02, 0.98)
 ```
-
-### Route-Level Aggregation
-
-```mermaid
-flowchart LR
-    A["Route Polyline\n(N waypoints)"] --> B["Sample every ~100m"]
-    B --> C["Query MongoDB 2dsphere\n(nearest segment ≤ 500m)"]
-    C --> D["Get score[timeSlot]\nfor each sample"]
-    D --> E["Distance-weighted\naverage safety"]
-    E --> F{"Chokepoint\nCheck"}
-    F -->|"Dangerous dist > 150m"| G["Apply penalty\nup to -0.30"]
-    F -->|"OK"| H["Final Mean Safety"]
-    G --> H
-    H --> I["Final = 0.35 + rawMean×0.65"]
-```
-
 ---
 
-## 🔄 Reinforcement Learning Pipeline
-
-<!-- Add screenshot/diagram of RL Pipeline here -->
-![RL Pipeline](placeholder_image_url_here)
+## Reinforcement Learning Pipeline
 
 The system uses a **tabular RL approach** inspired by temporal-difference learning. Rather than a neural network (which would be overkill for the data volume), it maintains a **`rl_modifier` float per segment** that shifts the pre-computed base score up or down based on community feedback.
 
 ### RL Update Rule
 
 ```
-RL Update (Batch, every hour via cron):
+RL Update (Batch, every hour via cron): schedule of updation can be adjusted
 
 For each new FeedbackLog:
   error = target_score - current_total_score
@@ -403,41 +387,9 @@ Update rule:
 Clamp:
   rl_modifier[S] = clamp(rl_modifier[S], -0.30, +0.30)
 ```
-
-### Credit Assignment for Route Ratings
-
-When a user rates an **entire route** (not a specific segment), the system uses **inverse-safety weighting** to distribute credit:
-
-```mermaid
-flowchart TD
-    A["User rates route: 4/5 ⭐"] --> B["Convert: target = (4-1)/4 = 0.75"]
-    B --> C["Fetch all N segments on route"]
-    C --> D["Compute inverse_safety[i] = 1 - currentScore[i]"]
-    D --> E["Total weight = Σ inverse_safety[i]"]
-    E --> F["normalizedWeight[i] = inverse_safety[i] / total"]
-    F --> G["globalError = target - routeAverage"]
-    G --> H["segError[i] = globalError × normalizedWeight[i]"]
-    H --> I["Dangerous segments absorb\nmore of the error signal"]
-```
-
-> **Key Insight:** If the user loved the route (high rating) but one segment is dangerous (low score), that dangerous segment gets a disproportionately **large positive update** — because it was the most surprising segment to the model.
-
-### Spam Detection
-
-```mermaid
-flowchart LR
-    A["New FeedbackLog batch"] --> B{"User rated\n≥ 3 times?"}
-    B -->|No| C["Accept at learning_weight = 1.0"]
-    B -->|Yes| D{"All 1s\nor all 5s?"}
-    D -->|Yes| E["learning_weight = 0.30\n⚠️ Likely Spam"]
-    D -->|No| F{"Variance\n< 0.5?"}
-    F -->|Yes| G["learning_weight = 0.70\n⚠️ Low variance"]
-    F -->|No| H["learning_weight = 1.0\n✅ Legitimate"]
-```
-
 ---
 
-## 📊 Data Flow
+## Data Flow
 
 ### Route Analysis Request Flow
 
@@ -481,7 +433,7 @@ sequenceDiagram
     
     U->>FE: Completes trip simulation
     FE->>FE: TripSummaryModal appears
-    U->>FE: Rates route segments (1–5 ⭐)
+    U->>FE: Rates route segments
     FE->>BE: POST /api/segments/rate-route-chunks\n{route_chunks, safest_chunk_id, confidence}
     BE->>DB: Write FeedbackLog\n{is_processed: false}
     BE-->>FE: {success: true}
@@ -496,7 +448,7 @@ sequenceDiagram
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 
@@ -527,81 +479,12 @@ sequenceDiagram
 | **Safety Scoring** | Weighted multi-feature linear model (time-adaptive) |
 | **RL Update** | Tabular temporal-difference (α=0.20, clamped modifier) |
 | **Credit Assignment** | Inverse-safety proportional weighting |
-| **Spam Detection** | Variance analysis on user rating history |
 | **Route Analysis** | Distance-weighted spatial averaging + chokepoint detection |
 | **Geo-querying** | MongoDB 2dsphere index, Haversine distance |
-| **Caching** | Redis SETEX with 12-hour TTL |
 
 ---
 
-## 📁 Project Structure
-
-```
-Fear-Free-Night-Navigator/
-│
-├── 📂 src/                          # React Frontend
-│   ├── App.tsx                      # Root layout + control orchestration
-│   ├── 📂 components/
-│   │   ├── 📂 Map/
-│   │   │   ├── MapView.tsx          # Core map, overlays, nav camera
-│   │   │   ├── SafetyInspector.tsx  # Click-to-inspect segment safety
-│   │   │   ├── StreetViewPanel.tsx  # Google Street View integration
-│   │   │   └── RoutePolylines.tsx   # Route lines with progress masking
-│   │   └── 📂 UI/
-│   │       ├── SearchBar.tsx        # Location input with autocomplete
-│   │       ├── RouteCard.tsx        # Per-route safety card
-│   │       ├── RouteInsightsPanel.tsx # Feature breakdown panel
-│   │       ├── NavigationHUD.tsx    # Driving HUD overlay
-│   │       ├── TripSummaryModal.tsx # Post-trip feedback collection
-│   │       ├── SegmentRatingPanel.tsx # Chunk-level rating UI
-│   │       ├── CameraToggle.tsx     # CCTV overlay toggle
-│   │       ├── LampToggle.tsx       # Street lamp overlay toggle
-│   │       ├── NearbyAlertsToggle.tsx # Live nearby POI alerts
-│   │       └── TimeModeToggle.tsx   # Night mode demo toggle
-│   ├── 📂 store/
-│   │   └── useNavigationStore.ts    # Zustand global state
-│   ├── 📂 hooks/
-│   │   ├── useNavigationController.ts # Simulation engine
-│   │   ├── useDirections.ts         # Google Directions fetching
-│   │   ├── useUserLocation.ts       # Browser geolocation
-│   │   └── useStreetView.ts         # Street View panorama control
-│   └── 📂 utils/
-│       └── timeUtils.ts             # Time slot computation
-│
-├── 📂 backend/                      # Node.js Backend
-│   ├── server.js                    # Entry point + cron job setup
-│   ├── app.js                       # Express app + middleware
-│   ├── 📂 controllers/
-│   │   └── segmentController.js     # All route analysis + feedback handlers
-│   ├── 📂 services/
-│   │   ├── batchLearningService.js  # RL training loop (runs hourly)
-│   │   ├── creditAssignmentService.js # Route → segment credit decomposition
-│   │   ├── scoringService.js        # Batch score recomputation
-│   │   └── segmentService.js        # CRUD helpers for segments
-│   ├── 📂 models/
-│   │   ├── RoadSegment.js           # Road features schema (2dsphere)
-│   │   ├── ScoredSegment.js         # Safety scores + rl_modifier
-│   │   └── FeedbackLog.js           # User feedback events
-│   ├── 📂 utils/
-│   │   ├── computeSafetyScore.js    # Core scoring formula
-│   │   └── generateSegmentId.js     # Deterministic segment ID
-│   └── 📂 config/
-│       ├── db.js                    # MongoDB connection
-│       └── redis.js                 # Redis client
-│
-├── 📂 datasets/
-│   ├── bangalore_city_full.json        # Full city road graph (OSM)
-│   ├── bangalore_graph_with_activity.json # Enriched with activity profiles
-│   ├── koramangala_cameras.json        # CCTV camera locations
-│   └── koramangala_street_lamps.json   # Street lamp positions
-│
-└── 📂 scripts/                      # Data pipeline scripts
-    └── (import/transform scripts)
-```
-
----
-
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -613,23 +496,21 @@ Fear-Free-Night-Navigator/
 | Redis | 7.x | Caching layer |
 | Google Maps API Key | — | Maps, Directions, Places |
 
----
-
-### 1. Clone the Repository
+#### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/fear-free-night-navigator.git
-cd fear-free-night-navigator
+git clone https://github.com/aprajita-99/Midnight-Maps.git
+cd Midnight-Maps
 ```
+#### 2. Configure Environment Variables
 
----
-
-### 2. Configure Environment Variables
-
-#### Frontend `.env` (project root)
+Frontend `.env` (project root)
 
 ```env
-VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+VITE_GOOGLE_MAPS_API_KEY = your-api-key
+MONGODB_URI=your-database-url ( database here is very important because of all the data being present here )
+VITE_API_BASE_URL=https://localhost:5000
+RL_TRAINING_INTERVAL_MS=300000
 ```
 
 **Required Google Maps APIs to enable:**
@@ -639,27 +520,17 @@ VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 - Geocoding API
 - Street View Static API
 
-#### Backend `.env` (`/backend/.env`)
+Backend `.env` (`/backend/.env`)
 
 ```env
-NODE_ENV=development
 PORT=5000
+MONGODB_URI=your-database-URL
+NODE_ENV=development
+REDIS_URL=your-Redis_URL
 
-# MongoDB (Atlas or local)
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/night_navigator?retryWrites=true&w=majority
-
-# Redis (local or Redis Cloud)
-REDIS_URL=redis://localhost:6379
-
-# Optional: Redis Cloud credentials
-REDIS_HOST=your-redis-host
-REDIS_PORT=6379
-REDIS_PASSWORD=your-redis-password
 ```
 
----
-
-### 3. Install Dependencies
+#### 3. Install Dependencies
 
 ```bash
 # Frontend dependencies
@@ -671,30 +542,23 @@ npm install
 cd ..
 ```
 
----
-
-### 4. Seed the Database
+#### 4. Seed the Database
 
 Import the road graph and safety features into MongoDB:
 
 ```bash
-cd backend
-
-# Import Koramangala road segments (start with this for demo)
-node scripts/importSegments.js
-
-# (Optional) Full Bangalore city graph
-node scripts/importFullCity.js
-
-# Compute initial safety scores for all segments
-node scripts/syncScores.js
+Step 1 - Run the script enrich_activity.py to fill the database with the segments and their activity values
+Step 2 - Run the script update_lighting.py to update the database with lighting values.
+Step 3 - Run the script update_camera.py to update the database with camera feature values.
+Step 4 - Download the model from the link given (http://places2.csail.mit.edu/models_places365/resnet50_places365.pth.tar)
+Step 5 - With the model and Categories365 fil , Run the script fill_environment.py
+Step 6 - run recompute_safety_scores.py
+- All done
 ```
 
 > **Note:** The datasets directory contains pre-processed JSON files. The seed scripts read these files and insert them into the `road_segments` and `scored_segments` MongoDB collections with proper 2dsphere indices.
 
----
-
-### 5. Run the Application
+#### 5. Run the Application
 
 **Terminal 1 — Backend Server:**
 ```bash
@@ -713,19 +577,17 @@ npm run dev
 **Terminal 3 (optional) — Watch backend logs for RL training:**
 ```bash
 cd backend
-npm run dev  # if using nodemon
+npm run dev
 ```
-
----
 
 ### 6. Verify the Setup
 
 Open `http://localhost:5173` in your browser. You should see:
 
-1. ✅ The **Midnight Maps** loading screen appears briefly
-2. ✅ A dark-themed map centered on **Koramangala, Bangalore**
-3. ✅ The left sidebar shows **Search Bar** and **Travel Mode** tabs
-4. ✅ Map controls (camera, lamp, traffic toggles) appear top-right
+1.  The **Midnight Maps** loading screen appears briefly
+2.  A dark-themed map centered on **Koramangala, Bangalore**
+3.  The left sidebar shows **Search Bar** and **Travel Mode** tabs
+4.  Map controls (camera, lamp, traffic toggles) appear top-right
 
 Test route analysis:
 1. Type a start location (e.g., "Forum Mall, Koramangala")
@@ -735,107 +597,9 @@ Test route analysis:
 
 ---
 
-## 🗂️ API Reference
+##  Data Schema
 
-**Base URL:** `http://localhost:5000/api/segments`
-
-### `POST /analyze-routes`
-Analyze multiple route alternatives for safety.
-
-**Request:**
-```json
-{
-  "routes": [
-    {
-      "points": [{"lat": 12.935, "lng": 77.624}, ...],
-      "distance": 4200,
-      "duration": 820
-    }
-  ],
-  "timeSlot": 0
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "routes": [
-    {
-      "routeIndex": 0,
-      "meanSafety": 0.74,
-      "risk": 0.12,
-      "minScore": 0.45,
-      "feedbackChunks": [...],
-      "features": {
-        "lighting": 0.68,
-        "camera": 0.52,
-        "activity": 0.61,
-        "environment": 0.71
-      }
-    }
-  ],
-  "indices": {
-    "shortest": 2,
-    "safest": 0,
-    "balanced": 1
-  }
-}
-```
-
----
-
-### `POST /rate-segment`
-Submit a single segment safety rating.
-
-```json
-{
-  "segment_id": "seg_12.9353_77.6251",
-  "rating": 4,
-  "time_slot": 0,
-  "confidence": 0.85
-}
-```
-
----
-
-### `POST /rate-route-chunks`
-Submit chunk-level route feedback after a trip.
-
-```json
-{
-  "route_chunks": [
-    {
-      "chunk_id": "part-1",
-      "label": "Part 1",
-      "distance": 1200,
-      "segment_ids": ["seg_..."],
-      "sample_count": 12
-    }
-  ],
-  "safest_chunk_id": "part-3",
-  "unsafe_chunk_id": "part-1",
-  "time_slot": 0,
-  "confidence": 0.9
-}
-```
-
----
-
-### `GET /nearby?lat=12.93&lng=77.62&radius=500`
-Get road segments near a coordinate.
-
-### `GET /nearest?lat=12.93&lng=77.62`
-Get the single nearest segment (≤200m).
-
-### `POST /sync-scores`
-Trigger manual recomputation of all safety scores.
-
----
-
-## 📐 Data Schema
-
-### RoadSegment (MongoDB)
+#### RoadSegment (MongoDB)
 
 ```
 segment_id       String    — Unique (e.g., "12.9353_77.6251:12.9361_77.6255")
@@ -877,85 +641,29 @@ user_context:
   lighting_conditions String
   companion_count Number
 ```
-
 ---
 
-## 🗺️ Datasets
+## Datasets and Models Used
 
 ### `koramangala_cameras.json`
 ~250 CCTV camera locations in the Koramangala area sourced from civic mapping data.
-
-```json
-[{"lat": 12.9353, "lng": 77.6251}, ...]
-```
+~fetched using API - "https://overpass-api.de/api/interpreter"
 
 ### `koramangala_street_lamps.json`
 ~1,500 street lamp positions providing granular lighting coverage data.
+~fetched using API - "https://overpass-api.de/api/interpreter"
 
 ### `bangalore_city_full.json`
 Full OpenStreetMap road graph for Bangalore city (~12k nodes, edges encoded as segment pairs).
+~fetched using osmnx python Library.
 
-### `bangalore_graph_with_activity.json`
-Enriched graph with synthetic activity profiles based on land-use classification (commercial, residential, industrial, park) — each producing realistic 12-slot activity vectors.
-
----
-
-## 🧪 Model Evaluation
-
-### Safety Score Validation
-
-We validated the scoring formula against known dangerous/safe streets in Koramangala:
-
-| Segment Type | Expected Category | Computed Score (Night) |
-|-------------|-------------------|----------------------|
-| Lit commercial road with CCTV | Safe | 0.82 – 0.91 |
-| Residential side street, some lamps | Moderate | 0.55 – 0.70 |
-| Dark industrial lane, no cameras | Dangerous | 0.18 – 0.35 |
-| Main road (daytime) | Safe | 0.88 – 0.96 |
-
-### RL Convergence Properties
-
-```
-α = 0.20 (learning rate)
-modifier clamp = ±0.30
-
-Expected convergence to within ε=0.05 of ground truth:
-  ~20 feedback events for a segment (one per batch cycle)
-  ≈ 20 hours with 1 rating/hour on active segments
-```
-
-### Cache Performance
-
-| Scenario | Latency |
-|---------|---------|
-| Cache HIT (Redis) | < 5ms |
-| Cache MISS (MongoDB 2dsphere × 100 samples) | 300–800ms |
-| Cache TTL | 12 hours |
-
-### Spam Resistance
-
-| Pattern | Detected? | Weight Applied |
-|---------|-----------|---------------|
-| All 1-star ratings | ✅ Yes | 30% |
-| All 5-star ratings | ✅ Yes | 30% |
-| Low variance (all 3s) | ✅ Yes | 70% |
-| Realistic mixed ratings | — | 100% |
-
----
-
-## 🙏 Acknowledgements
-
-- **OpenStreetMap** contributors for the base road graph
-- **Google Maps Platform** for Directions, Places, and Street View APIs
-- Civic data sources for Koramangala CCTV and street lamp positions
-- **Framer Motion** for the spring animation system
+### `365Places Model`
+Downloaded From - http://places2.csail.mit.edu/models_places365/resnet50_places365.pth.tar
 
 ---
 
 <div align="center">
 
 **Midnight Maps**
-
-*"The streets don't change. Our understanding of them does."*
 
 </div>
