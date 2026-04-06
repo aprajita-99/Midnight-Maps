@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://midnight-maps.onrender.com',
+        target: 'https://localhost:5000',
         changeOrigin: true,
       }
     }

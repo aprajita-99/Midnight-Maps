@@ -217,7 +217,8 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
   submitRouteChunkFeedback: async ({ chunks, safestChunkId, unsafeChunkId }) => {
     try {
       const localTimeSlot = getTimeSlot(get().isDemoNightMode);
-      const response = await fetch('/api/segments/rate-route-chunks', {
+      const baseurl = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${baseurl}/api/segments/rate-route-chunks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

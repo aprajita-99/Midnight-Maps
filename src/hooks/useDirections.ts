@@ -85,8 +85,8 @@ export function useDirections() {
             distance: route.legs[0].distance?.value || 0,
             duration: route.legs[0].duration?.value || 0,
           }));
-
-          fetch('https://midnight-maps.onrender.com/api/segments/analyze-routes', {
+           const baseurl = import.meta.env.VITE_API_BASE_URL;
+          fetch(`${baseurl}/api/segments/analyze-routes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
